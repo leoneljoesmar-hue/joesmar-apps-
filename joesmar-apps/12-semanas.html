@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>12 Semanas — Joesmar</title>
+<meta name="theme-color" content="#0d1117">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1c2128;--bg4:#21262d;
+  --border:#30363d;--text:#e6edf3;--muted:#8b949e;--faint:#484f58;
+  --green:#3fb950;--red:#f85149;--blue:#58a6ff;--yellow:#e3b341;
+  --purple:#bc8cff;--orange:#f0883e;--accent:#1f6feb;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif}
+body{display:flex;flex-direction:column;overflow-x:hidden}
+
+/* TOPBAR */
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 22px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.topbar-title{font-size:1rem;font-weight:700;display:flex;align-items:center;gap:10px}
+.week-pills{display:flex;gap:4px;flex-wrap:wrap}
+.wp{padding:3px 10px;border-radius:20px;border:1px solid var(--border);font-size:.7rem;font-weight:600;cursor:pointer;color:var(--muted);background:transparent;transition:all .15s;font-family:inherit}
+.wp:hover{border-color:var(--blue);color:var(--blue)}
+.wp.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.wp.done{border-color:var(--green);color:var(--green)}
+.wp.cur{border-color:var(--yellow);color:var(--yellow)}
+
+/* TABS */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--border);background:var(--bg2);padding:0 22px}
+.tab{padding:10px 18px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;user-select:none;white-space:nowrap}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-pane{display:none;padding:20px 22px;flex:1}.tab-pane.on{display:block}
+
+/* CARDS */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:18px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px}
+.cl{font-size:.72rem;color:var(--muted);margin-bottom:4px}
+.cv{font-size:1.5rem;font-weight:700}
+.cs{font-size:.72rem;color:var(--faint);margin-top:3px}
+.vg{color:var(--green)}.vr{color:var(--red)}.vb{color:var(--blue)}.vy{color:var(--yellow)}.vp{color:var(--purple)}
+.cg{border-color:rgba(63,185,80,.25);background:rgba(63,185,80,.04)}
+.cr2{border-color:rgba(248,81,73,.25);background:rgba(248,81,73,.04)}
+.cb{border-color:rgba(88,166,255,.25);background:rgba(88,166,255,.04)}
+.cy{border-color:rgba(227,179,65,.25);background:rgba(227,179,65,.04)}
+
+/* HÁBITOS */
+.hab-group{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:12px}
+.hab-group-title{font-size:.72rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.hab-row{display:flex;align-items:center;gap:10px;padding:7px 8px;border-radius:6px;border:1px solid var(--border);margin-bottom:5px;background:var(--bg3);transition:border-color .15s}
+.hab-row:hover{border-color:var(--blue)}
+.hab-name{flex:1;font-size:.83rem}
+.hab-freq{font-size:.7rem;color:var(--muted);white-space:nowrap;min-width:48px;text-align:right}
+.hab-counter{display:flex;align-items:center;gap:6px}
+.hbtn{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:var(--bg4);color:var(--text);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:inherit}
+.hbtn:hover{background:var(--accent);border-color:var(--accent)}
+.hval{font-size:1rem;font-weight:700;min-width:28px;text-align:center}
+.hab-pct{font-size:.7rem;min-width:34px;text-align:right;font-weight:600}
+
+/* PROGRESSO BAR */
+.pbar-bg{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.pbar{height:100%;border-radius:3px;transition:width .3s}
+
+/* NOTAS */
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.fl{font-size:.75rem;color:var(--muted)}
+.fi,.fs,textarea.fi{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:.83rem;color:var(--text);font-family:inherit;width:100%;outline:none}
+.fi:focus,.fs:focus,textarea.fi:focus{border-color:var(--blue)}
+
+/* BTN */
+.btn{padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:.8rem;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:5px;font-family:inherit}
+.btn-p{background:var(--accent);color:#fff}.btn-p:hover{background:#388bfd}
+.btn-g{background:transparent;color:var(--muted);border:1px solid var(--border)}.btn-g:hover{background:var(--bg3);color:var(--text)}
+.btn-r{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3)}.btn-r:hover{background:rgba(248,81,73,.25)}
+.btn-sm{font-size:.72rem;padding:4px 10px}
+
+/* HEATMAP */
+.heatmap{display:grid;grid-template-columns:repeat(12,1fr);gap:5px;margin-bottom:14px}
+.hm-cell{border-radius:4px;aspect-ratio:1;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:rgba(255,255,255,.8)}
+.hm-cell:hover{transform:scale(1.1)}
+
+/* SCORE BOX */
+.score-box{background:var(--bg2);border:2px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-bottom:16px}
+
+/* NOTAS GRID */
+.notas-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+
+/* IDEIAS */
+.ideia-item{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-radius:6px;background:var(--bg2);border:1px solid var(--border);margin-bottom:6px;font-size:.82rem}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:8px;font-size:.83rem;font-weight:600;opacity:0;transition:opacity .3s;z-index:200;pointer-events:none}
+.toast.show{opacity:1}
+.toast.tok{background:#238636;color:#fff}
+.toast.terr{background:#b91c1c;color:#fff}
+
+/* SEC TITLE */
+.sec-title{font-size:.7rem;color:var(--faint);text-transform:uppercase;letter-spacing:.8px;margin:18px 0 10px;font-weight:600}
+
+/* CHART */
+.chart-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px}
+.chart-title{font-size:.83rem;font-weight:600;margin-bottom:12px;color:var(--text)}
+
+/* FIN BAR */
+.fin-bar-bg{height:10px;background:var(--bg3);border-radius:5px;overflow:hidden;margin:6px 0}
+.fin-bar{height:100%;border-radius:5px;transition:width .4s}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-title">
+    <span style="font-size:1.4rem">📅</span>
+    <div>
+      <div>12 Semanas — Joesmar Leonel</div>
+      <div style="font-size:.68rem;color:var(--muted)" id="tb-sub">Carregando...</div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <div class="week-pills" id="week-pills"></div>
+    <button class="btn btn-g btn-sm" onclick="exportarJSON()">💾 Backup</button>
+    <label class="btn btn-g btn-sm" style="cursor:pointer">📂 Restaurar<input type="file" accept=".json" style="display:none" onchange="restaurarJSON(this)"></label>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab on" onclick="goTab('semana')">📋 Semana</div>
+  <div class="tab" onclick="goTab('progresso')">📈 Progresso</div>
+  <div class="tab" onclick="goTab('configurar')">⚙️ Hábitos</div>
+  <div class="tab" onclick="goTab('ideias')">💡 Ideias</div>
+</div>
+
+<!-- ═══ SEMANA ═══ -->
+<div id="tab-semana" class="tab-pane on">
+  <div style="max-width:760px">
+
+    <!-- Score box -->
+    <div class="score-box" id="score-box"></div>
+
+    <!-- Hábitos -->
+    <div id="habitos-render"></div>
+
+    <!-- Financeiro da semana -->
+    <div class="hab-group" id="fin-semana" style="border-color:rgba(63,185,80,.3)">
+      <div class="hab-group-title" style="color:var(--green)">💰 Financeiro da Semana</div>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:.7rem;color:var(--muted);margin-bottom:3px">Resultado Trading (R$)</div>
+          <input type="number" class="fi" id="fin-resultado" placeholder="Ex: 1500" step="0.01" style="max-width:160px" oninput="atualizaFin()">
+        </div>
+        <div style="flex:1;min-width:160px" id="fin-progress-box"></div>
+      </div>
+    </div>
+
+    <!-- Avaliação 0-10 -->
+    <div class="sec-title">Avaliação da Semana (0–10)</div>
+    <div class="notas-grid">
+      <div class="fg"><label class="fl">Trading / Disciplina</label>
+        <input type="number" class="fi" id="nota-trading" min="0" max="10" placeholder="0–10" oninput="atualizaMedia()"></div>
+      <div class="fg"><label class="fl">Saúde / Hábitos</label>
+        <input type="number" class="fi" id="nota-saude" min="0" max="10" placeholder="0–10" oninput="atualizaMedia()"></div>
+      <div class="fg"><label class="fl">Estudo / IA / Replay</label>
+        <input type="number" class="fi" id="nota-estudo" min="0" max="10" placeholder="0–10" oninput="atualizaMedia()"></div>
+      <div class="fg"><label class="fl">Vida Pessoal / Família</label>
+        <input type="number" class="fi" id="nota-vida" min="0" max="10" placeholder="0–10" oninput="atualizaMedia()"></div>
+    </div>
+    <div id="nota-media" style="font-size:.78rem;color:var(--muted);margin-bottom:16px"></div>
+
+    <!-- Reflexão -->
+    <div class="sec-title">Reflexão da Semana</div>
+    <div class="fg">
+      <label class="fl">✅ O que funcionou?</label>
+      <textarea class="fi" id="notas-ok" rows="2" placeholder="Ex: Fiz pré-mercado todos os dias, não pulei o replay..." style="resize:vertical"></textarea>
+    </div>
+    <div class="fg">
+      <label class="fl">⚡ O que melhorar?</label>
+      <textarea class="fi" id="notas-mel" rows="2" placeholder="Ex: Acordar mais cedo, banho gelado mais consistente..." style="resize:vertical"></textarea>
+    </div>
+    <button class="btn btn-p" style="margin-top:6px" onclick="fecharSemana()">💾 Fechar Semana</button>
+  </div>
+</div>
+
+<!-- ═══ PROGRESSO ═══ -->
+<div id="tab-progresso" class="tab-pane">
+  <div class="cards-grid" id="prog-cards"></div>
+
+  <!-- Heatmap -->
+  <div class="sec-title">Heatmap de Execução — 12 Semanas</div>
+  <div class="heatmap" id="heatmap"></div>
+
+  <!-- Gráfico Execução -->
+  <div class="chart-box">
+    <div class="chart-title">Evolução da Execução (%) — linha · meta ≥85%</div>
+    <div style="position:relative;height:200px"><canvas id="c-exec"></canvas></div>
+  </div>
+
+  <!-- Gráfico Financeiro -->
+  <div class="chart-box">
+    <div class="chart-title">Resultado Trading por Semana vs Meta R$2.000 — linha</div>
+    <div style="position:relative;height:180px"><canvas id="c-fin"></canvas></div>
+  </div>
+
+  <!-- Gráfico Notas -->
+  <div class="chart-box">
+    <div class="chart-title">Evolução das Notas por Área (0–10)</div>
+    <div style="position:relative;height:200px"><canvas id="c-notas"></canvas></div>
+  </div>
+
+  <!-- Histórico semanas -->
+  <div class="sec-title">Histórico das 12 Semanas</div>
+  <div id="historico-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px"></div>
+</div>
+
+<!-- ═══ CONFIGURAR HÁBITOS ═══ -->
+<div id="tab-configurar" class="tab-pane">
+  <div style="max-width:660px">
+
+    <!-- Iniciar ciclo -->
+    <div class="card" style="margin-bottom:14px">
+      <div style="font-size:.75rem;font-weight:700;color:var(--yellow);margin-bottom:8px">⚙️ CONFIGURAÇÃO DO CICLO</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+        <div class="fg" style="margin-bottom:0;flex:1;min-width:160px">
+          <label class="fl">Data de início</label>
+          <input type="date" class="fi" id="cfg-start">
+        </div>
+        <button class="btn btn-p btn-sm" onclick="salvarInicio()">Salvar Início</button>
+      </div>
+    </div>
+
+    <!-- Grupos de hábitos -->
+    <div id="grupos-list"></div>
+
+    <!-- Novo grupo -->
+    <div class="card" style="margin-bottom:14px">
+      <div style="font-size:.75rem;font-weight:700;color:var(--blue);margin-bottom:8px">+ NOVO GRUPO</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <input type="text" class="fi" id="novo-grupo-txt" placeholder="Ex: Saúde, Trading, Estudo..." style="flex:1;min-width:160px">
+        <button class="btn btn-p btn-sm" onclick="addGrupo()">+ Criar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ IDEIAS ═══ -->
+<div id="tab-ideias" class="tab-pane">
+  <div style="max-width:580px">
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <input type="text" class="fi" id="ideia-inp" placeholder="Anote uma ideia, insight ou pergunta..." onkeydown="if(event.key==='Enter')addIdeia()">
+      <button class="btn btn-p" onclick="addIdeia()">+</button>
+    </div>
+    <div id="ideias-list"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════
+//  DADOS & PERSISTÊNCIA
+// ════════════════════════════════
+const KEY='s12-joesmar-v2';
+
+const HABITOS_DEFAULT=[
+  {id:'g1',nome:'Saúde & Bem-estar',cor:'#3fb950',hab:[
+    {id:'h1',texto:'Meditação',freq:7},
+    {id:'h2',texto:'Banho gelado',freq:7},
+    {id:'h3',texto:'Academia',freq:5},
+    {id:'h4',texto:'Alimentação saudável',freq:7},
+    {id:'h5',texto:'Família',freq:7}
+  ]},
+  {id:'g2',nome:'Trading & Mercado',cor:'#58a6ff',hab:[
+    {id:'h6',texto:'Pré-mercado',freq:5},
+    {id:'h7',texto:'Mercado a vista',freq:5},
+    {id:'h8',texto:'Seguiu o plano',freq:5},
+    {id:'h9',texto:'Diário de trading',freq:5}
+  ]},
+  {id:'g3',nome:'Estudo & Crescimento',cor:'#bc8cff',hab:[
+    {id:'h10',texto:'Replay',freq:5},
+    {id:'h11',texto:'Estudo de IA',freq:5},
+    {id:'h12',texto:'Leitura',freq:7},
+    {id:'h13',texto:'Inglês',freq:5}
+  ]}
+];
+
+function dbDefault(){
+  return{
+    startDate:'2026-04-01',
+    grupos:JSON.parse(JSON.stringify(HABITOS_DEFAULT)),
+    semanas:Array.from({length:12},(_,i)=>({
+      num:i+1,exec:{},score:null,
+      notas:{ok:'',mel:''},
+      notas_av:{trading:null,saude:null,estudo:null,vida:null},
+      fin:null
+    })),
+    ideias:[]
+  };
+}
+
+let DB=null;
+let semAtual=0;
+let cExec=null,cFin=null,cNotas=null;
+
+function load(){
+  try{const raw=localStorage.getItem(KEY);if(raw)DB=JSON.parse(raw);}catch(e){}
+  if(!DB)DB=dbDefault();
+  // migração
+  if(!DB.grupos)DB.grupos=JSON.parse(JSON.stringify(HABITOS_DEFAULT));
+  if(!DB.semanas||DB.semanas.length<12){
+    DB.semanas=Array.from({length:12},(_,i)=>{
+      const ex=DB.semanas?.[i]||{};
+      return{num:i+1,exec:ex.exec||{},score:ex.score??null,notas:ex.notas||{ok:'',mel:''},notas_av:ex.notas_av||{trading:null,saude:null,estudo:null,vida:null},fin:ex.fin??null};
+    });
+  }
+  if(!DB.ideias)DB.ideias=[];
+  DB.startDate='2026-04-01';
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(DB));}catch(e){}}
+
+function toast(msg,tipo='tok'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast '+(tipo==='err'?'terr':'tok');el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+// ════════════════════════════════
+//  HELPERS
+// ════════════════════════════════
+function R(v){return'R$'+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function getDatas(idx){
+  if(!DB.startDate)return'';
+  const start=new Date(DB.startDate+'T12:00:00');
+  const ini=new Date(start);ini.setDate(start.getDate()+idx*7);
+  const fim=new Date(ini);fim.setDate(ini.getDate()+6);
+  const f=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+  return`${f(ini)} – ${f(fim)}`;
+}
+
+function getSemIdx(){
+  if(!DB.startDate)return 0;
+  const start=new Date(DB.startDate+'T12:00:00');
+  const diff=Math.floor((new Date()-start)/(7*24*60*60*1000));
+  return Math.max(0,Math.min(11,diff));
+}
+
+function getAllHab(){return(DB.grupos||[]).flatMap(g=>g.hab.map(h=>({...h,grpId:g.id,grpNome:g.nome,grpCor:g.cor})));}
+
+function calcScore(semIdx){
+  const all=getAllHab();
+  if(!all.length)return null;
+  const sem=DB.semanas[semIdx];
+  // se nenhum hábito foi tocado ainda, não mostrar 0% — mostrar —
+  const touched=Object.values(sem.exec||{}).some(v=>parseInt(v)>0);
+  if(!touched&&!sem.score)return null;
+  let plan=0,done=0;
+  all.forEach(h=>{plan+=h.freq;done+=Math.min(h.freq,parseInt(sem.exec[h.id])||0);});
+  return plan?Math.round(done/plan*100):null;
+}
+
+function scoreCor(sc){return sc===null?'var(--faint)':sc>=85?'var(--green)':sc>=60?'var(--yellow)':'var(--red)';}
+function scoreLbl(sc){
+  if(sc===null)return'—';
+  if(sc>=85)return'No caminho certo! 🔥';
+  if(sc>=60)return'Atenção — acelere ⚡';
+  return'Abaixo do esperado ⚠️';
+}
+
+// ════════════════════════════════
+//  NAVEGAÇÃO
+// ════════════════════════════════
+function goTab(tab){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('on',['semana','progresso','configurar','ideias'][i]===tab));
+  ['semana','progresso','configurar','ideias'].forEach(id=>{
+    const el=document.getElementById('tab-'+id);if(el)el.classList.toggle('on',id===tab);
+  });
+  if(tab==='semana')renderSemana();
+  if(tab==='progresso')renderProgresso();
+  if(tab==='configurar')renderConfigurar();
+  if(tab==='ideias')renderIdeias();
+}
+
+function irSemana(idx){
+  semAtual=idx;
+  document.querySelectorAll('.wp').forEach((el,i)=>el.classList.toggle('on',i===idx));
+  renderSemana();
+}
+
+// ════════════════════════════════
+//  WEEK PILLS
+// ════════════════════════════════
+function renderPills(){
+  const pills=document.getElementById('week-pills');
+  const cur=getSemIdx();
+  pills.innerHTML=Array.from({length:12},(_,i)=>{
+    const sc=DB.semanas[i].score;
+    const isCur=i===cur;
+    const isDone=sc!==null;
+    return`<button class="wp${semAtual===i?' on':''}${isCur&&semAtual!==i?' cur':''}${isDone&&semAtual!==i?' done':''}" onclick="irSemana(${i})" title="${getDatas(i)}">S${i+1}</button>`;
+  }).join('');
+  document.getElementById('tb-sub').textContent=`Semana ${semAtual+1} · ${getDatas(semAtual)} · Ciclo desde ${DB.startDate||'—'}`;
+}
+
+// ════════════════════════════════
+//  SEMANA ATUAL
+// ════════════════════════════════
+function renderSemana(){
+  renderPills();
+  const sem=DB.semanas[semAtual];
+  const sc=calcScore(semAtual);
+  const cor=scoreCor(sc);
+  const isCur=semAtual===getSemIdx();
+
+  // Score box
+  const sb=document.getElementById('score-box');
+  sb.style.borderColor=cor;
+  sb.innerHTML=`
+    <div style="text-align:center;min-width:64px">
+      <div style="font-size:2.2rem;font-weight:800;color:${cor};line-height:1">${sc!==null?sc+'%':'—'}</div>
+      <div style="font-size:.63rem;color:var(--muted);margin-top:2px">execução</div>
+    </div>
+    <div style="flex:1;min-width:140px">
+      <div style="font-size:.88rem;font-weight:600;color:${cor};margin-bottom:6px">${scoreLbl(sc)}</div>
+      <div class="pbar-bg" style="height:8px"><div class="pbar" style="width:${sc||0}%;background:${cor}"></div></div>
+      <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Meta: ≥85%</div>
+    </div>
+    <div style="font-size:.78rem;color:var(--muted)">Semana <strong style="color:var(--blue);font-size:1rem">${semAtual+1}</strong>/12${!isCur?' <span style="color:var(--faint);font-size:.65rem">(histórico)</span>':''}</div>`;
+
+  // Hábitos
+  const wrap=document.getElementById('habitos-render');
+  wrap.innerHTML=(DB.grupos||[]).map(g=>{
+    const rows=g.hab.map(h=>{
+      const val=parseInt(sem.exec[h.id])||0;
+      const pct=Math.min(100,Math.round(val/h.freq*100));
+      const c=pct>=100?'var(--green)':pct>=60?'var(--yellow)':'var(--red)';
+      return`<div class="hab-row">
+        <span class="hab-name">${h.texto}</span>
+        <span class="hab-freq">${h.freq}×/sem</span>
+        <div class="hab-counter">
+          <button class="hbtn" onclick="stepHab('${h.id}',${h.freq},-1)">−</button>
+          <span class="hval" id="hv-${h.id}" style="color:${c}">${val}</span>
+          <button class="hbtn" onclick="stepHab('${h.id}',${h.freq},1)">+</button>
+        </div>
+        <span class="hab-pct" style="color:${c}">${pct}%</span>
+      </div>`;
+    }).join('');
+    return`<div class="hab-group" style="border-left:3px solid ${g.cor}">
+      <div class="hab-group-title" style="color:${g.cor}">${g.nome}</div>
+      ${rows}
+    </div>`;
+  }).join('');
+
+  // Financeiro
+  atualizaFin(sem.fin);
+
+  // Notas avaliação
+  const av=sem.notas_av||{};
+  ['trading','saude','estudo','vida'].forEach(k=>{
+    const el=document.getElementById('nota-'+k);
+    if(el)el.value=av[k]!=null?av[k]:'';
+  });
+  atualizaMedia();
+
+  // Reflexão
+  document.getElementById('notas-ok').value=sem.notas?.ok||'';
+  document.getElementById('notas-mel').value=sem.notas?.mel||'';
+}
+
+function stepHab(habId,freq,delta){
+  const sem=DB.semanas[semAtual];
+  const cur=parseInt(sem.exec[habId])||0;
+  sem.exec[habId]=Math.max(0,Math.min(freq,cur+delta));
+  save();
+  const val=sem.exec[habId];
+  const pct=Math.min(100,Math.round(val/freq*100));
+  const c=pct>=100?'var(--green)':pct>=60?'var(--yellow)':'var(--red)';
+  const el=document.getElementById('hv-'+habId);
+  if(el){el.textContent=val;el.style.color=c;}
+  // atualizar score
+  const sc=calcScore(semAtual);
+  const cor=scoreCor(sc);
+  const sb=document.getElementById('score-box');
+  if(sb){
+    const num=sb.querySelector('[style*="2.2rem"]');
+    const bar=sb.querySelector('.pbar');
+    const lbl=sb.querySelector('[style*=".88rem"]');
+    if(num){num.textContent=sc!==null?sc+'%':'—';num.style.color=cor;}
+    if(bar){bar.style.width=(sc||0)+'%';bar.style.background=cor;}
+    if(lbl){lbl.textContent=scoreLbl(sc);lbl.style.color=cor;}
+    sb.style.borderColor=cor;
+  }
+}
+
+function atualizaFin(preload){
+  const inp=document.getElementById('fin-resultado');
+  if(preload!=null&&inp)inp.value=preload;
+  const val=parseFloat(inp?.value)||0;
+  const pct=Math.min(100,(val/2000*100)).toFixed(0);
+  const cor=val>=2000?'var(--green)':val>=0?'var(--yellow)':'var(--red)';
+  const box=document.getElementById('fin-progress-box');
+  if(box)box.innerHTML=`
+    <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Meta: R$2.000 — <strong style="color:${cor}">${pct}%</strong></div>
+    <div class="fin-bar-bg"><div class="fin-bar" style="width:${Math.max(0,pct)}%;background:${cor}"></div></div>
+    <div style="font-size:.72rem;margin-top:3px;color:${cor};font-weight:700">${val>=0?'+':''}${R(val)}</div>`;
+}
+
+function atualizaMedia(){
+  const vals=['trading','saude','estudo','vida'].map(k=>{
+    const v=parseFloat(document.getElementById('nota-'+k)?.value);
+    return isNaN(v)?null:Math.max(0,Math.min(10,v));
+  }).filter(v=>v!==null);
+  const med=document.getElementById('nota-media');
+  if(!med)return;
+  if(!vals.length){med.textContent='';return;}
+  const avg=(vals.reduce((a,v)=>a+v,0)/vals.length).toFixed(1);
+  const cor=avg>=8?'var(--green)':avg>=6?'var(--yellow)':'var(--red)';
+  med.innerHTML=`Média geral: <strong style="color:${cor}">${avg}/10</strong>`;
+}
+
+function fecharSemana(){
+  const sem=DB.semanas[semAtual];
+  sem.score=calcScore(semAtual);
+  sem.notas={ok:document.getElementById('notas-ok').value.trim(),mel:document.getElementById('notas-mel').value.trim()};
+  const av={};
+  ['trading','saude','estudo','vida'].forEach(k=>{
+    const v=parseFloat(document.getElementById('nota-'+k)?.value);
+    if(!isNaN(v))av[k]=Math.max(0,Math.min(10,v));
+  });
+  sem.notas_av=av;
+  sem.fin=parseFloat(document.getElementById('fin-resultado')?.value)||null;
+  save();renderPills();toast('Semana '+( semAtual+1)+' fechada!');
+}
+
+// ════════════════════════════════
+//  PROGRESSO
+// ════════════════════════════════
+function renderProgresso(){
+  const sems=DB.semanas;
+  const scores=sems.map((_,i)=>calcScore(i));
+  const scoreMed=scores.filter(v=>v!==null);
+  const med=scoreMed.length?Math.round(scoreMed.reduce((a,v)=>a+v,0)/scoreMed.length):null;
+  const semsOk=scores.filter(v=>v!==null&&v>=85).length;
+
+  // Cards
+  document.getElementById('prog-cards').innerHTML=`
+    <div class="card cb"><div class="cl">Semana Atual</div><div class="cv vb">${getSemIdx()+1}</div><div class="cs">de 12</div></div>
+    <div class="card ${med===null?'':med>=85?'cg':'cy'}"><div class="cl">Execução Média</div><div class="cv ${med===null?'vp':med>=85?'vg':'vy'}">${med!==null?med+'%':'—'}</div><div class="cs">meta ≥85%</div></div>
+    <div class="card cg"><div class="cl">Semanas ≥85%</div><div class="cv vg">${semsOk}</div><div class="cs">de ${scoreMed.length} fechadas</div></div>
+    <div class="card cy"><div class="cl">% Ciclo</div><div class="cv vy">${Math.round((getSemIdx()+1)/12*100)}%</div><div class="cs">completo</div></div>`;
+
+  // Heatmap
+  const hm=document.getElementById('heatmap');
+  hm.innerHTML=sems.map((s,i)=>{
+    const sc=scores[i];
+    const bg=sc===null?'rgba(48,54,61,.4)':sc>=85?'rgba(63,185,80,.7)':sc>=60?'rgba(227,179,65,.7)':'rgba(248,81,73,.7)';
+    const isCur=i===getSemIdx();
+    return`<div class="hm-cell" style="background:${bg};border:${isCur?'2px solid #58a6ff':'2px solid transparent'}" title="S${i+1}: ${sc!==null?sc+'%':'—'}">${sc!==null?sc:'?'}</div>`;
+  }).join('');
+
+  // Gráfico execução (linha)
+  const lbls=Array.from({length:12},(_,i)=>`S${i+1}`);
+  if(cExec)cExec.destroy();
+  const wExec=document.getElementById('c-exec');
+  cExec=new Chart(wExec,{type:'line',
+    data:{labels:lbls,datasets:[
+      {label:'Execução %',data:scores,borderColor:'#58a6ff',backgroundColor:'rgba(88,166,255,.1)',
+       borderWidth:2,pointRadius:5,tension:.35,fill:true,spanGaps:false,
+       pointBackgroundColor:scores.map(v=>v===null?'transparent':v>=85?'#3fb950':v>=60?'#e3b341':'#f85149')},
+      {label:'Meta 85%',data:Array(12).fill(85),borderColor:'rgba(88,166,255,.4)',borderDash:[6,4],borderWidth:1.5,pointRadius:0,fill:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}}},
+      scales:{x:{ticks:{color:'#8b949e',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},
+              y:{min:0,max:100,ticks:{color:'#8b949e',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.05)'}}}}});
+
+  // Gráfico financeiro (linha)
+  const finData=sems.map(s=>s.fin!=null?s.fin:null);
+  if(cFin)cFin.destroy();
+  const wFin=document.getElementById('c-fin');
+  cFin=new Chart(wFin,{type:'line',
+    data:{labels:lbls,datasets:[
+      {label:'Trading R$',data:finData,borderColor:'#3fb950',backgroundColor:'rgba(63,185,80,.08)',
+       borderWidth:2,pointRadius:5,tension:.35,fill:true,spanGaps:false,
+       pointBackgroundColor:finData.map(v=>v===null?'transparent':v>=2000?'#3fb950':v>=0?'#e3b341':'#f85149')},
+      {label:'Meta R$2.000',data:Array(12).fill(2000),borderColor:'rgba(227,179,65,.5)',borderDash:[6,4],borderWidth:1.5,pointRadius:0,fill:false}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}},
+        tooltip:{callbacks:{label:ctx=>`R$ ${(ctx.raw||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}`}}},
+      scales:{x:{ticks:{color:'#8b949e',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},
+              y:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.05)'}}}}});
+
+  // Gráfico notas por área (multi-linha)
+  const areas=[
+    {k:'trading',label:'Trading',color:'#58a6ff'},
+    {k:'saude',label:'Saúde',color:'#3fb950'},
+    {k:'estudo',label:'Estudo',color:'#bc8cff'},
+    {k:'vida',label:'Vida',color:'#f0883e'}
+  ];
+  if(cNotas)cNotas.destroy();
+  const wNotas=document.getElementById('c-notas');
+  cNotas=new Chart(wNotas,{type:'line',
+    data:{labels:lbls,datasets:areas.map(a=>({
+      label:a.label,
+      data:sems.map(s=>s.notas_av?.[a.k]??null),
+      borderColor:a.color,backgroundColor:'transparent',
+      borderWidth:2,pointRadius:4,tension:.3,fill:false,spanGaps:false,
+      pointBackgroundColor:a.color
+    }))},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}}},
+      scales:{x:{ticks:{color:'#8b949e',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},
+              y:{min:0,max:10,ticks:{color:'#8b949e',font:{size:10}},grid:{color:'rgba(255,255,255,.05)'}}}}});
+
+  // Histórico
+  const grid=document.getElementById('historico-grid');
+  const cur=getSemIdx();
+  grid.innerHTML=sems.map((s,i)=>{
+    const sc=scores[i];const cor=scoreCor(sc);const isCur=i===cur;
+    const av=s.notas_av||{};const avVals=Object.values(av).filter(v=>v!=null);
+    const avMed=avVals.length?(avVals.reduce((a,v)=>a+v,0)/avVals.length).toFixed(1):null;
+    const avCor=avMed>=8?'var(--green)':avMed>=6?'var(--yellow)':'var(--red)';
+    return`<div style="background:var(--bg2);border:1px solid ${isCur?'var(--blue)':cor==='var(--faint)'?'var(--border)':cor};border-radius:8px;padding:12px;cursor:pointer" onclick="irSemana(${i});goTab('semana')">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span style="font-size:.85rem;font-weight:700">Semana ${i+1}${isCur?' <span style="font-size:.6rem;color:var(--blue)">(atual)</span>':''}</span>
+        <span style="font-size:.88rem;font-weight:700;color:${cor}">${sc!==null?sc+'%':'—'}</span>
+      </div>
+      ${sc!==null?`<div class="pbar-bg" style="height:4px"><div class="pbar" style="width:${sc}%;background:${cor}"></div></div>`:''}
+      ${avMed!==null?`<div style="font-size:.7rem;color:var(--muted);margin-top:5px">Nota: <strong style="color:${avCor}">${avMed}/10</strong>${s.fin!=null?' · Trade: '+(s.fin>=0?'+':'')+R(s.fin):''}</div>`:''}
+      ${s.notas?.ok?`<div style="font-size:.67rem;color:var(--faint);margin-top:3px;font-style:italic">"${s.notas.ok.slice(0,55)}${s.notas.ok.length>55?'...':''}"</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════
+//  CONFIGURAR HÁBITOS
+// ════════════════════════════════
+function renderConfigurar(){
+  document.getElementById('cfg-start').value=DB.startDate||'';
+  const div=document.getElementById('grupos-list');
+  div.innerHTML=(DB.grupos||[]).map((g,gi)=>`
+    <div class="hab-group" style="border-left:3px solid ${g.cor}">
+      <div class="hab-group-title" style="color:${g.cor}">
+        ${g.nome}
+        <button class="btn btn-r btn-sm" style="margin-left:auto" onclick="delGrupo(${gi})">✕ Remover grupo</button>
+      </div>
+      ${g.hab.map((h,hi)=>`
+        <div class="hab-row">
+          <span class="hab-name">${h.texto}</span>
+          <select class="fs" style="max-width:80px;font-size:.75rem;padding:3px 6px" onchange="setFreq(${gi},${hi},this.value)">
+            ${[1,2,3,4,5,6,7].map(n=>`<option value="${n}"${h.freq===n?' selected':''}>${n}×/sem</option>`).join('')}
+          </select>
+          <button class="btn btn-r btn-sm btn-ico" onclick="delHab(${gi},${hi})">✕</button>
+        </div>`).join('')}
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <input type="text" class="fi" id="nh-${gi}" placeholder="Novo hábito..." style="flex:1;min-width:120px;font-size:.78rem">
+        <select class="fs" id="nf-${gi}" style="max-width:80px;font-size:.75rem">
+          ${[1,2,3,4,5,6,7].map(n=>`<option value="${n}"${n===5?' selected':''}>${n}×/sem</option>`).join('')}
+        </select>
+        <button class="btn btn-p btn-sm" onclick="addHab(${gi})">+ Hábito</button>
+      </div>
+    </div>`).join('');
+}
+
+function salvarInicio(){
+  const v=document.getElementById('cfg-start').value;
+  if(!v){toast('Selecione uma data','err');return;}
+  DB.startDate=v;save();renderPills();toast('Início salvo!');
+}
+
+function addGrupo(){
+  const inp=document.getElementById('novo-grupo-txt');
+  const txt=(inp.value||'').trim();if(!txt)return;
+  const cores=['#3fb950','#58a6ff','#bc8cff','#f0883e','#e3b341','#f85149','#39d353','#58a6ff'];
+  const cor=cores[(DB.grupos.length)%cores.length];
+  DB.grupos.push({id:'g'+Date.now(),nome:txt,cor,hab:[]});
+  inp.value='';save();renderConfigurar();toast('Grupo criado!');
+}
+
+function delGrupo(gi){if(!confirm('Remover grupo e todos os hábitos?'))return;DB.grupos.splice(gi,1);save();renderConfigurar();}
+
+function addHab(gi){
+  const inp=document.getElementById('nh-'+gi);
+  const freqEl=document.getElementById('nf-'+gi);
+  const txt=(inp.value||'').trim();if(!txt)return;
+  const freq=parseInt(freqEl?.value)||5;
+  DB.grupos[gi].hab.push({id:'h'+Date.now(),texto:txt,freq});
+  inp.value='';save();renderConfigurar();toast('Hábito adicionado!');
+}
+
+function delHab(gi,hi){DB.grupos[gi].hab.splice(hi,1);save();renderConfigurar();}
+function setFreq(gi,hi,v){DB.grupos[gi].hab[hi].freq=parseInt(v)||1;save();}
+
+// ════════════════════════════════
+//  IDEIAS
+// ════════════════════════════════
+function renderIdeias(){
+  const div=document.getElementById('ideias-list');
+  if(!DB.ideias.length){div.innerHTML='<div style="color:var(--faint);font-size:.83rem;padding:20px 0">Nenhuma ideia registrada ainda.</div>';return;}
+  div.innerHTML=DB.ideias.map((id,i)=>`
+    <div class="ideia-item">
+      <span style="flex:1">${id.texto}</span>
+      <span style="font-size:.68rem;color:var(--faint);margin:0 10px;white-space:nowrap">${id.data||''}</span>
+      <button class="btn btn-r btn-sm" onclick="delIdeia(${i})">✕</button>
+    </div>`).join('');
+}
+
+function addIdeia(){
+  const inp=document.getElementById('ideia-inp');
+  const txt=(inp.value||'').trim();if(!txt)return;
+  DB.ideias.unshift({id:Date.now(),texto:txt,data:new Date().toISOString().split('T')[0]});
+  inp.value='';save();renderIdeias();toast('Ideia salva!');
+}
+function delIdeia(i){if(!confirm('Remover?'))return;DB.ideias.splice(i,1);save();renderIdeias();}
+
+// ════════════════════════════════
+//  BACKUP / RESTORE
+// ════════════════════════════════
+function exportarJSON(){
+  const blob=new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='12semanas-backup-'+new Date().toISOString().split('T')[0]+'.json';a.click();
+}
+function restaurarJSON(input){
+  const f=input.files[0];if(!f)return;
+  const r=new FileReader();r.onload=e=>{
+    try{DB=JSON.parse(e.target.result);save();semAtual=getSemIdx();renderSemana();toast('Restaurado!');}
+    catch(err){toast('Arquivo inválido','err');}
+  };r.readAsText(f);
+}
+
+// ════════════════════════════════
+//  INIT
+// ════════════════════════════════
+load();
+semAtual=getSemIdx();
+renderPills();
+renderSemana();
+</script>
+</body>
+</html>

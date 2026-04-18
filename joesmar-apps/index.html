@@ -1,0 +1,2601 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Finance Pro — Joesmar</title>
+<meta name="theme-color" content="#0d1117">
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161b22;--bg3:#1c2128;--bg4:#21262d;
+  --border:#30363d;--text:#e6edf3;--muted:#8b949e;--faint:#484f58;
+  --green:#3fb950;--red:#f85149;--blue:#58a6ff;--yellow:#e3b341;
+  --purple:#bc8cff;--orange:#f0883e;--teal:#39d353;--accent:#1f6feb;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);display:flex}
+
+/* SIDEBAR */
+.sb{width:230px;min-width:230px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;height:100vh}
+.sb-logo{padding:16px 18px 12px;border-bottom:1px solid var(--border)}
+.sb-logo h2{font-size:.95rem;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+.sb-logo span{font-size:.68rem;color:var(--muted)}
+.sb-nav{flex:1;overflow-y:auto;padding:6px 0}
+.sb-sec{padding:10px 18px 3px;font-size:.62rem;color:var(--faint);text-transform:uppercase;letter-spacing:1px}
+.ni{display:flex;align-items:center;gap:9px;padding:8px 18px;cursor:pointer;font-size:.83rem;color:var(--muted);border-left:3px solid transparent;transition:all .15s;user-select:none}
+.ni:hover{background:var(--bg3);color:var(--text)}
+.ni.active{background:rgba(31,111,235,.15);color:var(--blue);border-left-color:var(--blue)}
+.ni .ico{font-size:1rem;width:18px;text-align:center}
+.sb-foot{padding:10px 18px;border-top:1px solid var(--border);font-size:.68rem;color:var(--faint)}
+.sb-user{display:flex;align-items:center;gap:8px;padding:10px 18px;border-top:1px solid var(--border);cursor:pointer}
+.sb-user:hover{background:var(--bg3)}
+.sb-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;flex-shrink:0;overflow:hidden}
+.sb-avatar img{width:100%;height:100%;object-fit:cover}
+.sb-user-info{flex:1;min-width:0}
+.sb-user-name{font-size:.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-user-status{font-size:.62rem;color:var(--muted);display:flex;align-items:center;gap:4px}
+.sync-dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.sync-ok{background:var(--green)}
+.sync-off{background:var(--faint)}
+.sync-ing{background:var(--yellow);animation:pulse .8s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:10px 22px;display:flex;align-items:center;justify-content:space-between;min-height:50px;gap:10px}
+.topbar h3{font-size:.95rem;font-weight:600}
+.mes-pills{display:flex;gap:4px;flex-wrap:wrap}
+.mp{padding:3px 10px;border-radius:20px;border:1px solid var(--border);font-size:.7rem;font-weight:600;cursor:pointer;color:var(--muted);background:transparent;transition:all .15s;font-family:inherit}
+.mp:hover{border-color:var(--blue);color:var(--blue)}
+.mp.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.content{flex:1;overflow-y:auto;padding:18px 22px}
+
+/* BOTÕES */
+.btn{padding:7px 14px;border-radius:6px;border:none;cursor:pointer;font-size:.8rem;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:5px;font-family:inherit}
+.btn-p{background:var(--accent);color:#fff}.btn-p:hover{background:#388bfd}
+.btn-s{background:rgba(35,134,54,.2);color:var(--green);border:1px solid rgba(35,134,54,.4)}.btn-s:hover{background:rgba(35,134,54,.3)}
+.btn-g{background:transparent;color:var(--muted);border:1px solid var(--border)}.btn-g:hover{background:var(--bg3);color:var(--text)}
+.btn-r{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3)}.btn-r:hover{background:rgba(248,81,73,.25)}
+.btn-ico{padding:4px 8px}
+.btn-sm{font-size:.72rem;padding:4px 10px}
+
+/* PAINÉIS */
+.panel{display:none}
+.panel.active{display:block}
+
+/* CARDS */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:18px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px}
+.cl{font-size:.72rem;color:var(--muted);margin-bottom:4px}
+.cv{font-size:1.5rem;font-weight:700}
+.cs{font-size:.72rem;color:var(--faint);margin-top:3px}
+.vg{color:var(--green)}.vr{color:var(--red)}.vb{color:var(--blue)}.vy{color:var(--yellow)}.vp{color:var(--purple)}.vo{color:var(--orange)}
+.cg{border-color:rgba(63,185,80,.25);background:rgba(63,185,80,.04)}
+.cr2{border-color:rgba(248,81,73,.25);background:rgba(248,81,73,.04)}
+.cb{border-color:rgba(88,166,255,.25);background:rgba(88,166,255,.04)}
+.cy{border-color:rgba(227,179,65,.25);background:rgba(227,179,65,.04)}
+.cp{border-color:rgba(188,140,255,.25);background:rgba(188,140,255,.04)}
+
+/* FORMULÁRIO */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.form-full{grid-column:1/-1}
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.fl{font-size:.75rem;color:var(--muted)}
+.fi,.fs,textarea.fi{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-size:.83rem;color:var(--text);font-family:inherit;width:100%;outline:none}
+.fi:focus,.fs:focus,textarea.fi:focus{border-color:var(--blue)}
+
+/* TABELA */
+.tbl-wrap{overflow-x:auto;margin-top:10px}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{background:var(--bg3);color:var(--muted);padding:8px 10px;text-align:left;font-weight:600;font-size:.72rem;white-space:nowrap;border-bottom:1px solid var(--border)}
+td{padding:8px 10px;border-bottom:1px solid rgba(48,54,61,.5);vertical-align:middle}
+tr:hover td{background:var(--bg3)}
+.empty{color:var(--faint);text-align:center;padding:30px;font-size:.83rem}
+
+/* TAG / BADGE */
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:600}
+.win-badge{background:rgba(63,185,80,.15);color:var(--green)}
+.loss-badge{background:rgba(248,81,73,.15);color:var(--red)}
+.be-badge{background:rgba(88,166,255,.15);color:var(--blue)}
+.trd-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:700}
+.trd-badge.long{background:rgba(63,185,80,.15);color:var(--green)}
+.trd-badge.short{background:rgba(248,81,73,.15);color:var(--red)}
+
+/* INSIGHTS */
+.insight{display:flex;gap:10px;padding:10px 12px;border-radius:7px;margin-bottom:8px;font-size:.8rem;line-height:1.5}
+.insight.danger{background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.2)}
+.insight.warn{background:rgba(227,179,65,.08);border:1px solid rgba(227,179,65,.2)}
+.insight.good{background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.2)}
+.ins-ico{font-size:1rem;flex-shrink:0}
+.ins-t{font-weight:700;margin-bottom:2px}
+.ins-b{color:var(--muted)}
+.rec-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px}
+.rec-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.rec-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700;flex-shrink:0}
+
+/* SAÚDE */
+.health-bar{height:10px;border-radius:5px;background:linear-gradient(90deg,var(--red),var(--yellow),var(--green));position:relative;margin:8px 0}
+.health-ptr{position:absolute;top:-4px;width:4px;height:18px;background:var(--text);border-radius:2px;transition:left .3s}
+
+/* METAS */
+.meta-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px}
+.meta-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.meta-cat{display:flex;align-items:center;gap:6px;font-size:.83rem;font-weight:600}
+.meta-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.meta-val{font-size:.72rem;color:var(--muted)}
+.meta-nums{display:flex;justify-content:space-between;font-size:.72rem;margin-top:5px}
+.pbar-bg{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.pbar{height:100%;border-radius:3px;transition:width .3s}
+.meta-input-row{display:flex;gap:6px;margin-top:8px;align-items:center}
+.meta-input-row input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.78rem;color:var(--text);outline:none;font-family:inherit}
+.meta-input-row input:focus{border-color:var(--blue)}
+
+/* PARCELAS */
+.cb2{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px}
+.cb2-h{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.cb2-b{padding-top:8px;border-top:1px solid var(--border)}
+.sub-item{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:.8rem}
+.sa{display:flex;gap:4px}
+.add-sub{display:flex;gap:6px;margin-top:8px}
+.add-sub input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.78rem;color:var(--text);outline:none;font-family:inherit}
+.cdots{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.cdot{width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.cdot.sel{border-color:var(--text)}
+
+/* CHART */
+.chart-box{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:14px}
+.chart-title{font-size:.83rem;font-weight:600;margin-bottom:12px;color:var(--text)}
+.chart-wrap{position:relative}
+
+/* OVERLAYS */
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center}
+.ov.open{display:flex}
+.ov-box{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:24px;min-width:300px;max-width:420px}
+.ov-box h3{font-size:1rem;margin-bottom:8px}
+.ov-box p{font-size:.83rem;color:var(--muted);margin-bottom:18px}
+.ov-btns{display:flex;gap:8px;justify-content:flex-end}
+.ov-box input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:.9rem;color:var(--text);margin-bottom:16px;outline:none;font-family:inherit}
+.ov-box input:focus{border-color:var(--blue)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;padding:10px 18px;border-radius:8px;font-size:.83rem;font-weight:600;opacity:0;transition:opacity .3s;z-index:200;pointer-events:none}
+.toast.show{opacity:1}
+.toast.tok{background:#238636;color:#fff}
+.toast.terr{background:#b91c1c;color:#fff}
+.toast.tinf{background:var(--accent);color:#fff}
+
+/* SEÇÃO */
+.sec-title{font-size:.72rem;color:var(--faint);text-transform:uppercase;letter-spacing:.8px;margin:18px 0 10px;font-weight:600}
+
+/* FIN ACUM */
+.fin-acum-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-bottom:10px}
+.fin-acum-cell{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:6px;text-align:center;cursor:pointer;transition:border-color .15s}
+.fin-acum-cell:hover{border-color:var(--blue)}
+.fin-acum-cell.cur{border-color:var(--blue);background:rgba(31,111,235,.1)}
+.fin-acum-cell.pos .wv{color:var(--green)}
+.fin-acum-cell.neg .wv{color:var(--red)}
+.fin-acum-cell .wn{font-size:.62rem;color:var(--muted)}
+.fin-acum-cell .wv{font-size:.75rem;font-weight:700}
+
+/* TABS (12 Semanas + Estudo) */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px}
+.tab{padding:8px 16px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;user-select:none}
+.tab:hover{color:var(--text)}
+.tab.on{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-pane{display:none}.tab-pane.on{display:block}
+
+/* SEMANA CARD */
+.sem-card{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.sem-card:hover{border-color:var(--blue)}
+.sem-card.cur{border-color:var(--blue);background:rgba(31,111,235,.06)}
+.sem-card h4{font-size:.85rem;font-weight:700;margin-bottom:4px}
+.sem-meta-item{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.sem-meta-item span{font-size:.83rem}
+.s12-score{display:inline-block;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:700}
+
+/* ESTUDO */
+.est-tipo-sel{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.est-tipo-btn{padding:5px 12px;border-radius:20px;border:1px solid var(--border);font-size:.75rem;font-weight:600;cursor:pointer;color:var(--muted);background:transparent;transition:all .15s;font-family:inherit}
+.est-tipo-btn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.est-row{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(48,54,61,.4);font-size:.8rem}
+
+/* HAMBURGER */
+.hbg{display:none;flex-direction:column;gap:5px;padding:8px;cursor:pointer;background:transparent;border:none;flex-shrink:0}
+.hbg span{display:block;width:20px;height:2px;background:var(--text);border-radius:2px;transition:all .25s}
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:498;backdrop-filter:blur(2px)}
+.sb-overlay.show{display:block}
+
+/* MOBILE */
+@media(max-width:768px){
+  html,body{overflow:auto}
+  body{flex-direction:column}
+  .sb{position:fixed;left:-240px;top:0;height:100vh;z-index:499;transition:left .25s;min-width:230px;box-shadow:4px 0 24px rgba(0,0,0,.4)}
+  .sb.open{left:0}
+  .main{width:100%;min-height:100vh;overflow:auto}
+  .topbar{position:sticky;top:0;z-index:100;padding:10px 14px}
+  .hbg{display:flex}
+  .content{padding:12px 14px;overflow:visible}
+  .form-grid{grid-template-columns:1fr!important}
+  .form-full{grid-column:1!important}
+  .cards-grid{grid-template-columns:repeat(2,1fr)!important}
+  .cv{font-size:1.2rem!important}
+  table{font-size:.72rem}
+  th,td{padding:6px 7px}
+  .chart-box{padding:10px}
+  div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr!important;display:grid!important}
+  div[style*="grid-template-columns:repeat(6"]{grid-template-columns:repeat(3,1fr)!important;display:grid!important}
+  .tabs{gap:2px;overflow-x:auto;flex-wrap:nowrap}
+  .tab{white-space:nowrap;padding:7px 12px;font-size:.75rem}
+  .mes-pills{gap:3px;flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
+  .mp{font-size:.65rem;padding:3px 8px;white-space:nowrap}
+  .sb-nav{-webkit-overflow-scrolling:touch}
+  .btn{font-size:.8rem;padding:9px 14px}
+  .topbar h3{font-size:.85rem}
+}
+
+/* LOGIN SCREEN */
+.login-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:999;align-items:center;justify-content:center}
+.login-screen.show{display:flex}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:40px 32px;min-width:320px;max-width:400px;text-align:center}
+.login-logo{font-size:48px;margin-bottom:12px}
+.login-title{font-size:1.3rem;font-weight:700;margin-bottom:6px}
+.login-sub{font-size:.83rem;color:var(--muted);margin-bottom:28px;line-height:1.6}
+.btn-google{width:100%;padding:12px;background:#fff;border:none;border-radius:8px;color:#1a1a1a;font-size:.9rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;font-family:inherit;transition:background .15s}
+.btn-google:hover{background:#f0f0f0}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sb">
+  <div class="sb-logo">
+    <h2>💹 Finance Pro</h2>
+    <span>Joesmar Leonel Trader</span>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-sec">Visão Geral</div>
+    <div class="ni active" onclick="go('dash')"><span class="ico">📊</span>Dashboard</div>
+    <div class="ni" onclick="go('agente')"><span class="ico">🤖</span>Agente Gestor</div>
+    <div class="sb-sec">Finanças</div>
+    <div class="ni" onclick="go('lanc')"><span class="ico">➕</span>Novo Lançamento</div>
+    <div class="ni" onclick="go('extrato')"><span class="ico">📋</span>Extrato</div>
+    <div class="ni" onclick="go('metas')"><span class="ico">🎯</span>Metas Mensais</div>
+    <div class="ni" onclick="go('parc')"><span class="ico">💳</span>Parcelas</div>
+    <div class="sb-sec">Trading</div>
+    <div class="ni" onclick="go('trading')"><span class="ico">📈</span>Operações</div>
+    <div class="sb-sec">Estudo</div>
+    <div class="ni" onclick="go('estudo')"><span class="ico">📝</span>Estudo & Replay</div>
+    <div class="ni" onclick="go('analise-estudo')"><span class="ico">🔬</span>Análise</div>
+    <div class="sb-sec">12 Semanas</div>
+    <div class="ni" onclick="go('semanas12')"><span class="ico">🗓️</span>12 Semanas</div>
+    <div class="sb-sec">Config</div>
+    <div class="ni" onclick="go('cats')"><span class="ico">🏷️</span>Categorias</div>
+    <div class="ni" onclick="go('rel')"><span class="ico">📤</span>Exportar</div>
+  </div>
+  <div class="sb-user" onclick="sairConta()" title="Clique para sair">
+    <div class="sb-avatar" id="sb-avatar">J</div>
+    <div class="sb-user-info">
+      <div class="sb-user-name" id="sb-name">Carregando...</div>
+      <div class="sb-user-status"><span class="sync-dot sync-ing" id="sync-dot"></span><span id="sync-txt">Conectando...</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY MOBILE -->
+<div class="sb-overlay" id="sb-overlay" onclick="toggleMenu()"></div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <button class="hbg" onclick="toggleMenu()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+    <h3 id="topbar-title">Dashboard</h3>
+    <div class="mes-pills" id="mes-pills"></div>
+  </div>
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div id="panel-dash" class="panel active">
+      <div class="cards-grid" id="dash-cards"></div>
+      <div class="sec-title">Resultado de Trading</div>
+      <div class="cards-grid" id="trade-cards"></div>
+      <div class="chart-box">
+        <div class="chart-title">Equity Curve — Todas as operações</div>
+        <div class="chart-wrap" id="c-equity-wrap" style="height:200px"><canvas id="c-equity"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">Ganhos vs Gastos — Ano</div>
+        <div class="chart-wrap" id="c-dash-anual-wrap" style="height:200px"><canvas id="c-dash-anual"></canvas></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="chart-box">
+          <div class="chart-title">Gastos por Categoria</div>
+          <div class="chart-wrap" id="c-dash-cat-wrap" style="height:200px"><canvas id="c-dash-cat"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">Ganhos por Categoria</div>
+          <div class="chart-wrap" id="c-dash-ganho-wrap" style="height:200px"><canvas id="c-dash-ganho"></canvas></div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">Saldo Mensal — Evolução do Ano <span style="font-size:.72rem;color:var(--muted);font-weight:400">(linha)</span></div>
+        <div class="chart-wrap" id="c-saldo-linha-wrap" style="height:200px"><canvas id="c-saldo-linha"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">Resultado de Trading — Mês a Mês <span style="font-size:.72rem;color:var(--muted);font-weight:400">(linha)</span></div>
+        <div class="chart-wrap" id="c-trade-linha-wrap" style="height:180px"><canvas id="c-trade-linha"></canvas></div>
+      </div>
+      <div class="sec-title">Resumo Anual Completo</div>
+      <div id="resumo-anual"></div>
+    </div>
+
+    <!-- AGENTE GESTOR -->
+    <div id="panel-agente" class="panel">
+      <div class="cards-grid">
+        <div class="card" style="grid-column:1/-1">
+          <div class="cl">Score de Saúde Financeira</div>
+          <div style="display:flex;align-items:center;gap:16px;margin-top:6px">
+            <div id="score-val" class="cv vg" style="font-size:2.5rem">—</div>
+            <div>
+              <div id="score-label" style="font-size:.9rem;font-weight:600"></div>
+              <div class="health-bar" style="width:200px"><div class="health-ptr" id="health-ptr" style="left:50%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sec-title">Resumo do Período</div>
+      <div id="agente-resumo"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="chart-box" style="margin-bottom:0">
+          <div class="chart-title">Gastos por Categoria</div>
+          <div class="chart-wrap" id="c-ag-cat-wrap" style="height:200px"><canvas id="c-ag-cat"></canvas></div>
+        </div>
+        <div class="chart-box" style="margin-bottom:0">
+          <div class="chart-title">Trading por Mês</div>
+          <div class="chart-wrap" id="c-ag-trade-wrap" style="height:200px"><canvas id="c-ag-trade"></canvas></div>
+        </div>
+      </div>
+      <div class="sec-title">Insights</div>
+      <div id="insights"></div>
+      <div class="sec-title">Recomendações</div>
+      <div id="recomendacoes"></div>
+    </div>
+
+    <!-- NOVO LANÇAMENTO -->
+    <div id="panel-lanc" class="panel">
+      <div style="max-width:560px">
+        <div class="form-grid">
+          <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="f-data"></div>
+          <div class="fg"><label class="fl">Tipo</label>
+            <select class="fs" id="f-tipo" onchange="syncCats()">
+              <option value="GASTO">GASTO</option><option value="GANHO">GANHO</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl">Categoria</label><select class="fs" id="f-cat" onchange="syncSubs()"></select></div>
+          <div class="fg"><label class="fl">Subcategoria</label><select class="fs" id="f-sub"></select></div>
+          <div class="fg form-full"><label class="fl">Descrição</label><input type="text" class="fi" id="f-desc" placeholder="Ex: Conta de luz, Almoço..."></div>
+          <div class="fg"><label class="fl">Valor (R$)</label><input type="number" class="fi" id="f-val" placeholder="0,00" step="0.01" min="0"></div>
+          <div class="fg"><label class="fl">Pago com</label>
+            <select class="fs" id="f-pagto">
+              <option>Débito</option><option>Crédito</option><option>PIX</option>
+              <option>Dinheiro</option><option>Transferência</option><option>Outro</option>
+            </select>
+          </div>
+          <div class="fg form-full"><label class="fl">Observação</label><input type="text" class="fi" id="f-obs" placeholder="Opcional..."></div>
+        </div>
+        <button class="btn btn-p" onclick="salvarLanc()">💾 Salvar Lançamento</button>
+      </div>
+      <div class="sec-title" style="margin-top:24px">Lançamento Rápido de Trading</div>
+      <div style="max-width:560px">
+        <div class="form-grid">
+          <div class="fg"><label class="fl">Mês/Ano</label><input type="month" class="fi" id="tr-data"></div>
+          <div class="fg"><label class="fl">Tipo</label>
+            <select class="fs" id="tr-tipo">
+              <option value="GANHO">GANHO</option><option value="GASTO">PREJUÍZO</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl">Valor (R$)</label><input type="number" class="fi" id="tr-val" placeholder="0,00" step="0.01" min="0"></div>
+          <div class="fg"><label class="fl">Observação</label><input type="text" class="fi" id="tr-obs" placeholder="Opcional..."></div>
+        </div>
+        <button class="btn btn-p" onclick="salvarTrading()">📈 Registrar Resultado</button>
+      </div>
+    </div>
+
+    <!-- EXTRATO -->
+    <div id="panel-extrato" class="panel">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="chart-box" style="margin-bottom:0">
+          <div class="chart-title">Gastos por Categoria</div>
+          <div class="chart-wrap" id="c-ext-cat-wrap" style="height:180px"><canvas id="c-ext-cat"></canvas></div>
+        </div>
+        <div class="chart-box" style="margin-bottom:0">
+          <div class="chart-title">Ganhos por Categoria</div>
+          <div class="chart-wrap" id="c-ext-ganho-wrap" style="height:180px"><canvas id="c-ext-ganho"></canvas></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <input type="text" class="fi" id="ext-q" placeholder="Buscar..." style="max-width:220px" oninput="renderExtrato()">
+        <select class="fs" id="ext-tipo" style="max-width:140px" onchange="renderExtrato()">
+          <option value="">Todos</option><option value="GANHO">Ganhos</option><option value="GASTO">Gastos</option>
+        </select>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Data</th><th>Dia</th><th>Tipo</th><th>Categoria</th>
+            <th>Sub</th><th>Descrição</th><th>Valor</th><th>Pagto</th><th>Obs</th><th></th>
+          </tr></thead>
+          <tbody id="ext-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- METAS -->
+    <div id="panel-metas" class="panel">
+      <div style="max-width:400px;margin-bottom:18px">
+        <div class="form-grid">
+          <div class="fg"><label class="fl">Categoria</label><select class="fs" id="meta-cat"></select></div>
+          <div class="fg"><label class="fl">Limite mensal (R$)</label><input type="number" class="fi" id="meta-val" placeholder="Ex: 500" min="0" step="10"></div>
+        </div>
+        <button class="btn btn-p" onclick="salvarMeta()">Definir Meta</button>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">Meta vs Real por Categoria</div>
+        <div class="chart-wrap" id="c-metas-wrap" style="height:220px"><canvas id="c-metas"></canvas></div>
+      </div>
+      <div id="metas-grid"></div>
+    </div>
+
+    <!-- PARCELAS -->
+    <div id="panel-parc" class="panel">
+      <div class="cards-grid" id="parc-cards"></div>
+      <div style="max-width:560px;margin-bottom:18px">
+        <div class="sec-title">Nova Compra Parcelada</div>
+        <div class="form-grid">
+          <div class="fg form-full"><label class="fl">Descrição</label><input type="text" class="fi" id="p-desc" placeholder="Ex: Notebook, Geladeira..."></div>
+          <div class="fg"><label class="fl">Categoria</label><select class="fs" id="p-cat"></select></div>
+          <div class="fg"><label class="fl">Data da compra</label><input type="date" class="fi" id="p-data"></div>
+          <div class="fg"><label class="fl">Valor total (R$)</label><input type="number" class="fi" id="p-total" placeholder="0,00" step="0.01" oninput="calcParc()"></div>
+          <div class="fg"><label class="fl">Nº parcelas</label><input type="number" class="fi" id="p-qtd" placeholder="12" min="1" oninput="calcParc()"></div>
+          <div class="fg"><label class="fl">Valor por parcela</label><input type="number" class="fi" id="p-val-parc" placeholder="Auto" step="0.01"></div>
+          <div class="fg"><label class="fl">Já pagas</label><input type="number" class="fi" id="p-pagas" value="0" min="0"></div>
+        </div>
+        <button class="btn btn-p" onclick="salvarParc()">💾 Salvar Parcela</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Descrição</th><th>Categoria</th><th>Data</th><th>Total</th>
+            <th>Parcela</th><th>Qtd</th><th>Pagas</th><th>Restam</th>
+            <th>Pago</th><th>Restante</th><th>Próx. Vcto</th><th></th>
+          </tr></thead>
+          <tbody id="parc-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TRADING -->
+    <div id="panel-trading" class="panel">
+      <div style="max-width:640px;margin-bottom:18px">
+        <div class="sec-title">Registrar Operação</div>
+        <div class="form-grid">
+          <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="t-data"></div>
+          <div class="fg"><label class="fl">Hora</label><input type="time" class="fi" id="t-hora"></div>
+          <div class="fg"><label class="fl">Direção</label>
+            <select class="fs" id="t-dir">
+              <option value="LONG">LONG</option><option value="SHORT">SHORT</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl">Lotes</label><input type="number" class="fi" id="t-lots" value="1" min="1"></div>
+          <div class="fg"><label class="fl">Entrada</label><input type="number" class="fi" id="t-entry" placeholder="5000" step="0.5" oninput="calcAutoTrade()"></div>
+          <div class="fg"><label class="fl">Saída</label><input type="number" class="fi" id="t-exit" placeholder="5020" step="0.5" oninput="calcAutoTrade()"></div>
+          <div class="fg"><label class="fl">Stop (pts)</label><input type="number" class="fi" id="t-stop" placeholder="Ex: 5" step="0.5" min="0" oninput="calcAutoTrade()"></div>
+          <div class="fg"><label class="fl">R:R</label><input type="text" class="fi" id="t-rr-display" placeholder="—" readonly style="opacity:.6;cursor:default"></div>
+          <div class="fg"><label class="fl">Setup</label>
+            <select class="fs" id="t-setup">
+              <option>Mínima</option><option>Máxima</option>
+              <option>Pullback 61% região</option><option>Pullback 50%</option>
+              <option>Pullback 38%</option><option>Respiro Raso</option>
+              <option>Rompimento</option><option>Outro</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl">Gatilho</label>
+            <select class="fs" id="t-gatilho">
+              <option>Absorção</option><option>Exaustão</option>
+              <option>Perda de volume</option><option>Montagem de posição</option>
+              <option>Rompimento</option><option>Sem gatilho</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl">Estado emocional</label>
+            <select class="fs" id="t-emoc">
+              <option>Calmo</option><option>Ansioso</option><option>Animado</option>
+              <option>Frustrado</option><option>Cansado</option><option>Normal</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl">Resultado (R$)</label><input type="number" class="fi" id="t-res" placeholder="Auto" step="0.01"></div>
+          <div class="fg form-full"><label class="fl">Observação</label><input type="text" class="fi" id="t-obs" placeholder="O que aconteceu nessa operação?"></div>
+        </div>
+        <button class="btn btn-p" onclick="salvarTrade()">💾 Registrar Trade</button>
+      </div>
+      <div class="cards-grid" id="trade-cards-trading"></div>
+      <div class="chart-box">
+        <div class="chart-title">Equity Curve</div>
+        <div class="chart-wrap" id="c-equity-t-wrap" style="height:200px"><canvas id="c-equity-t"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">Win Rate por Setup (%)</div>
+        <div class="chart-wrap" id="c-setup-wrap" style="height:180px"><canvas id="c-setup"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">Resultado por Gatilho (R$)</div>
+        <div class="chart-wrap" id="c-emocao-wrap" style="height:160px"><canvas id="c-emocao"></canvas></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">Resultado por Estado Emocional (R$)</div>
+        <div class="chart-wrap" id="c-emoc-t-wrap" style="height:160px"><canvas id="c-emoc-t"></canvas></div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Data</th><th>Hora</th><th>Dir</th><th>Entrada</th><th>Saída</th>
+            <th>Lotes</th><th>R:R</th><th>Setup</th><th>Gatilho</th><th>Emoção</th><th>Resultado</th><th>Obs</th><th></th>
+          </tr></thead>
+          <tbody id="t-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CATEGORIAS -->
+    <div id="panel-cats" class="panel">
+      <div style="max-width:480px;margin-bottom:18px">
+        <div class="sec-title">Nova Categoria</div>
+        <div class="form-grid">
+          <div class="fg"><label class="fl">Nome</label><input type="text" class="fi" id="nc-nome" placeholder="Ex: LAZER" maxlength="30"></div>
+          <div class="fg"><label class="fl">Tipo</label>
+            <select class="fs" id="nc-tipo">
+              <option value="GASTO">GASTO</option><option value="GANHO">GANHO</option>
+            </select>
+          </div>
+        </div>
+        <div class="sec-title">Cor</div>
+        <div class="cdots" id="cdots"></div>
+        <button class="btn btn-p" onclick="addCat()">+ Criar Categoria</button>
+      </div>
+      <div id="cats-render"></div>
+    </div>
+
+    <!-- EXPORTAR -->
+    <div id="panel-rel" class="panel">
+      <div style="max-width:400px;display:flex;flex-direction:column;gap:10px">
+        <button class="btn btn-p" onclick="exportCSV()">📥 Exportar lançamentos (CSV)</button>
+        <button class="btn btn-g" onclick="exportTradeCSV()">📥 Exportar trades (CSV)</button>
+        <button class="btn btn-g" onclick="exportParcCSV()">📥 Exportar parcelas (CSV)</button>
+        <button class="btn btn-s" onclick="backupJSON()">💾 Backup completo (JSON)</button>
+        <div style="margin-top:8px">
+          <label class="fl" style="margin-bottom:6px;display:block">Restaurar backup JSON</label>
+          <input type="file" accept=".json" onchange="restoreJSON(this)" style="color:var(--muted);font-size:.8rem">
+        </div>
+      </div>
+    </div>
+
+    <!-- ESTUDO & REPLAY -->
+    <div id="panel-estudo" class="panel">
+      <div class="tabs">
+        <div class="tab on" onclick="showEstTab('ops')">Operações</div>
+        <div class="tab" onclick="showEstTab('sess')">Sessões de Estudo</div>
+      </div>
+
+      <!-- ABA: OPERAÇÕES DE ESTUDO -->
+      <div id="est-tab-ops" class="tab-pane on">
+        <div style="max-width:620px;margin-bottom:18px">
+          <div class="form-grid">
+            <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="eo-data"></div>
+            <div class="fg"><label class="fl">Hora</label><input type="time" class="fi" id="eo-hora"></div>
+            <div class="fg"><label class="fl">Tipo</label>
+              <select class="fs" id="eo-tipo">
+                <option value="REPLAY">Replay</option>
+                <option value="SIMULADOR">Simulador</option>
+                <option value="REAL">Real (anotação)</option>
+              </select>
+            </div>
+            <div class="fg"><label class="fl">Direção</label>
+              <select class="fs" id="eo-dir">
+                <option value="LONG">LONG</option>
+                <option value="SHORT">SHORT</option>
+              </select>
+            </div>
+            <div class="fg"><label class="fl">Setup</label>
+              <select class="fs" id="eo-setup"></select>
+            </div>
+            <div class="fg"><label class="fl">Gatilho</label>
+              <select class="fs" id="eo-gatilho"></select>
+            </div>
+            <div class="fg"><label class="fl">Resultado (R$)</label>
+              <input type="number" class="fi" id="eo-res" placeholder="Ex: 150 ou -80" step="0.01">
+            </div>
+            <div class="fg form-full"><label class="fl">Observação</label>
+              <input type="text" class="fi" id="eo-obs" placeholder="O que aconteceu nessa operação?">
+            </div>
+          </div>
+          <button class="btn btn-p" onclick="addOpEstudo()">💾 Registrar Operação</button>
+        </div>
+        <div class="sec-title">Histórico de Operações</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Data</th><th>Hora</th><th>Tipo</th><th>Dir</th>
+              <th>Setup</th><th>Gatilho</th><th>Resultado</th><th>Obs</th><th></th>
+            </tr></thead>
+            <tbody id="eo-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ABA: SESSÕES DE ESTUDO -->
+      <div id="est-tab-sess" class="tab-pane">
+        <div style="max-width:560px;margin-bottom:18px">
+          <div class="form-grid">
+            <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="es-data"></div>
+            <div class="fg"><label class="fl">Tipo</label>
+              <select class="fs" id="es-tipo">
+                <option value="REPLAY">Replay</option>
+                <option value="LEITURA">Leitura</option>
+                <option value="VIDEO">Vídeo/Aula</option>
+                <option value="ANÁLISE">Análise Gráfico</option>
+                <option value="OUTRO">Outro</option>
+              </select>
+            </div>
+            <div class="fg"><label class="fl">Duração (min)</label>
+              <input type="number" class="fi" id="es-min" placeholder="Ex: 60" min="1">
+            </div>
+            <div class="fg"><label class="fl">Setups estudados</label>
+              <input type="text" class="fi" id="es-setups" placeholder="Ex: Pullback 50%, Mínima">
+            </div>
+            <div class="fg form-full"><label class="fl">Observações / O que aprendi</label>
+              <input type="text" class="fi" id="es-obs" placeholder="Principais aprendizados desta sessão...">
+            </div>
+          </div>
+          <button class="btn btn-p" onclick="addSessaoEstudo()">📚 Registrar Sessão</button>
+        </div>
+        <div class="sec-title">Histórico de Sessões</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>Data</th><th>Tipo</th><th>Duração</th><th>Setups</th><th>Observações</th><th></th>
+            </tr></thead>
+            <tbody id="es-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANÁLISE DE ESTUDO -->
+    <div id="panel-analise-estudo" class="panel">
+      <div class="cards-grid" id="aest-cards"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+        <div class="chart-box" style="margin-bottom:0">
+          <div class="chart-title">Win Rate por Setup (%)</div>
+          <div class="chart-wrap" id="c-est-setup-wrap" style="height:200px"><canvas id="c-est-setup"></canvas></div>
+        </div>
+        <div class="chart-box" style="margin-bottom:0">
+          <div class="chart-title">Resultado por Gatilho (R$)</div>
+          <div class="chart-wrap" id="c-est-gatilho-wrap" style="height:200px"><canvas id="c-est-gatilho"></canvas></div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">Equity Curve — Operações de Estudo</div>
+        <div class="chart-wrap" id="c-est-equity-wrap" style="height:180px"><canvas id="c-est-equity"></canvas></div>
+      </div>
+      <div class="sec-title">Todas as Operações</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Data</th><th>Tipo</th><th>Dir</th><th>Setup</th><th>Gatilho</th><th>Resultado</th><th>Obs</th>
+          </tr></thead>
+          <tbody id="aest-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 12 SEMANAS -->
+    <div id="panel-semanas12" class="panel">
+      <div class="tabs">
+        <div class="tab on" onclick="show12Tab('semana')">📋 Semana</div>
+        <div class="tab" onclick="show12Tab('progresso')">📈 Progresso</div>
+        <div class="tab" onclick="show12Tab('metas')">⚙️ Hábitos</div>
+      </div>
+
+      <!-- ABA: SEMANA ATUAL -->
+      <div id="s12-tab-semana" class="tab-pane on">
+        <!-- Cabeçalho semana + score -->
+        <div id="s12-sem-header" style="margin-bottom:14px"></div>
+        <div id="s12-score-box" style="margin-bottom:16px"></div>
+
+        <!-- Scorecard: táticas com contagem de execuções -->
+        <div id="s12-scorecard" style="margin-bottom:18px"></div>
+
+        <!-- Notas 0-10 por área -->
+        <div style="max-width:580px;margin-bottom:18px">
+          <div class="sec-title">Avaliação da Semana (0–10)</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="fg"><label class="fl">Trading / Disciplina</label>
+              <input type="number" class="fi" id="s12-nota-trading" min="0" max="10" placeholder="0–10" oninput="s12AtualizaMedia()"></div>
+            <div class="fg"><label class="fl">Saúde / Hábitos</label>
+              <input type="number" class="fi" id="s12-nota-saude" min="0" max="10" placeholder="0–10" oninput="s12AtualizaMedia()"></div>
+            <div class="fg"><label class="fl">Estudo / IA / Replay</label>
+              <input type="number" class="fi" id="s12-nota-estudo" min="0" max="10" placeholder="0–10" oninput="s12AtualizaMedia()"></div>
+            <div class="fg"><label class="fl">Vida Pessoal / Família</label>
+              <input type="number" class="fi" id="s12-nota-vida" min="0" max="10" placeholder="0–10" oninput="s12AtualizaMedia()"></div>
+          </div>
+          <div id="s12-nota-media" style="margin-top:6px;font-size:.78rem;color:var(--muted)"></div>
+        </div>
+
+        <!-- Reflexão da semana -->
+        <div style="max-width:580px">
+          <div class="fg">
+            <label class="fl">O que funcionou esta semana?</label>
+            <textarea class="fi" id="s12-notas" rows="2" placeholder="Ex: Fiz pré-mercado todos os dias, fui à academia 4×..." style="resize:vertical"></textarea>
+          </div>
+          <div class="fg" style="margin-top:8px">
+            <label class="fl">O que melhorar na próxima?</label>
+            <textarea class="fi" id="s12-melhorar" rows="2" placeholder="Ex: Acordar mais cedo, não pular o replay..." style="resize:vertical"></textarea>
+          </div>
+          <button class="btn btn-p" style="margin-top:8px" onclick="s12SaveSemana()">💾 Fechar Semana</button>
+        </div>
+      </div>
+
+      <!-- ABA: HÁBITOS -->
+      <div id="s12-tab-metas" class="tab-pane">
+        <div style="max-width:660px">
+          <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+            <input type="text" class="fi" id="s12-meta-txt" placeholder="Nome do grupo (Ex: Saúde, Trading, Estudo...)" style="flex:1;min-width:180px">
+            <button class="btn btn-p btn-sm" onclick="s12AddMeta()" style="white-space:nowrap">+ Novo Grupo</button>
+          </div>
+          <div id="s12-metas-list"></div>
+        </div>
+      </div>
+
+      <!-- ABA: PROGRESSO -->
+      <div id="s12-tab-progresso" class="tab-pane">
+        <div class="cards-grid" id="s12-prog-cards"></div>
+        <div class="chart-box">
+          <div class="chart-title">Evolução da Execução — 12 Semanas <span style="font-size:.72rem;color:var(--muted);font-weight:400">(linha · meta ≥85%)</span></div>
+          <div class="chart-wrap" id="c-s12-wrap" style="height:220px"><canvas id="c-s12"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">Resultado Trading por Semana vs Meta R$2.000 <span style="font-size:.72rem;color:var(--muted);font-weight:400">(linha)</span></div>
+          <div class="chart-wrap" id="c-s12-fin-wrap" style="height:200px"><canvas id="c-s12-fin"></canvas></div>
+        </div>
+        <div id="s12-semanas-grid"></div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen show" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">💹</div>
+    <div class="login-title">Finance Pro</div>
+    <div class="login-sub">Seus dados ficam salvos na nuvem.<br>Entre com sua conta Google para começar.</div>
+    <button class="btn-google" onclick="loginGoogle()">
+      <span>🔵</span> Entrar com Google
+    </button>
+  </div>
+</div>
+
+<!-- OVERLAYS -->
+<div class="ov" id="ov-del">
+  <div class="ov-box">
+    <h3>Excluir lançamento?</h3><p>Essa ação não pode ser desfeita.</p>
+    <div class="ov-btns">
+      <button class="btn btn-g" onclick="closeOv('ov-del')">Cancelar</button>
+      <button class="btn btn-r" onclick="confirmDel()">Excluir</button>
+    </div>
+  </div>
+</div>
+<div class="ov" id="ov-del-trade">
+  <div class="ov-box">
+    <h3>Excluir operação?</h3><p>Essa ação não pode ser desfeita.</p>
+    <div class="ov-btns">
+      <button class="btn btn-g" onclick="closeOv('ov-del-trade')">Cancelar</button>
+      <button class="btn btn-r" onclick="confirmDelTrade()">Excluir</button>
+    </div>
+  </div>
+</div>
+<div class="ov" id="ov-del-cat">
+  <div class="ov-box">
+    <h3>Excluir categoria?</h3><p>Os lançamentos não serão apagados.</p>
+    <div class="ov-btns">
+      <button class="btn btn-g" onclick="closeOv('ov-del-cat')">Cancelar</button>
+      <button class="btn btn-r" onclick="confirmDelCat()">Excluir</button>
+    </div>
+  </div>
+</div>
+<div class="ov" id="ov-edit-cat">
+  <div class="ov-box">
+    <h3>Renomear categoria</h3>
+    <input type="text" id="ov-cat-input" placeholder="Novo nome...">
+    <div class="ov-btns">
+      <button class="btn btn-g" onclick="closeOv('ov-edit-cat')">Cancelar</button>
+      <button class="btn btn-p" onclick="confirmEditCat()">Salvar</button>
+    </div>
+  </div>
+</div>
+<div class="ov" id="ov-del-parc">
+  <div class="ov-box">
+    <h3>Excluir parcela?</h3><p>Essa ação não pode ser desfeita.</p>
+    <div class="ov-btns">
+      <button class="btn btn-g" onclick="closeOv('ov-del-parc')">Cancelar</button>
+      <button class="btn btn-r" onclick="confirmDelParc()">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════
+//  FIREBASE CONFIG
+// ════════════════════════════════
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyC_rz-dSl0i8PJ_18oY-WcYWnkI7zII8ek",
+  authDomain:        "finance-pro-joesmar.firebaseapp.com",
+  projectId:         "finance-pro-joesmar",
+  storageBucket:     "finance-pro-joesmar.firebasestorage.app",
+  messagingSenderId: "580094499843",
+  appId:             "1:580094499843:web:a813e1ad1d1511224ec236"
+};
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+let currentUser = null;
+
+function loginGoogle(){
+  const p = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(p).catch(e=>{console.error(e);toast('Erro no login','terr');});
+}
+function sairConta(){
+  if(!confirm('Sair da conta?'))return;
+  auth.signOut();
+}
+function toggleMenu(){
+  document.querySelector('.sb').classList.toggle('open');
+  document.getElementById('sb-overlay').classList.toggle('show');
+}
+function closeMobileMenu(){
+  document.querySelector('.sb').classList.remove('open');
+  document.getElementById('sb-overlay').classList.remove('show');
+}
+function setSyncStatus(s){
+  const dot=document.getElementById('sync-dot');
+  const txt=document.getElementById('sync-txt');
+  if(!dot)return;
+  dot.className='sync-dot '+(s==='ok'?'sync-ok':s==='ing'?'sync-ing':'sync-off');
+  txt.textContent=s==='ok'?'Sincronizado':s==='ing'?'Sincronizando...':'Sem conexão';
+}
+async function saveToCloud(){
+  if(!currentUser)return;
+  setSyncStatus('ing');
+  try{
+    await db.collection('usuarios').doc(currentUser.uid).set({
+      dados:JSON.stringify(DB),
+      at:firebase.firestore.FieldValue.serverTimestamp()
+    });
+    setSyncStatus('ok');
+  }catch(e){setSyncStatus('off');console.error(e);}
+}
+async function loadFromCloud(){
+  if(!currentUser)return;
+  setSyncStatus('ing');
+  try{
+    const doc=await db.collection('usuarios').doc(currentUser.uid).get();
+    if(doc.exists&&doc.data().dados){
+      DB=JSON.parse(doc.data().dados);
+      garantirCamposDB();
+    }
+    // Migrar dados do localStorage (uma só vez, se existirem)
+    migrarLocalStorage();
+    setSyncStatus('ok');
+  }catch(e){setSyncStatus('off');console.error(e);}
+}
+
+function migrarLocalStorage(){
+  const migKey='jpro_ls_migrado';
+  if(localStorage.getItem(migKey))return;
+  let migrou=false;
+  const ops=localStorage.getItem('trader_ops_v2');
+  if(ops){
+    try{
+      const arr=JSON.parse(ops);
+      if(Array.isArray(arr)&&arr.length){
+        arr.forEach(op=>{
+          if(!DB.opsEstudo.find(o=>o.id===op.id)){DB.opsEstudo.push(op);}
+        });
+        migrou=true;
+      }
+    }catch(e){}
+  }
+  const sess=localStorage.getItem('trader_estudos_v2');
+  if(sess){
+    try{
+      const arr=JSON.parse(sess);
+      if(Array.isArray(arr)&&arr.length){
+        arr.forEach(s=>{
+          if(!DB.estudos.find(x=>x.id===s.id)){DB.estudos.push(s);}
+        });
+        migrou=true;
+      }
+    }catch(e){}
+  }
+  const semData=localStorage.getItem('twelveWeeks_data');
+  const semStart=localStorage.getItem('twelveWeeks_startDate');
+  const semIdeias=localStorage.getItem('twelveWeeks_ideias');
+  if(semData){
+    try{
+      const arr=JSON.parse(semData);
+      if(Array.isArray(arr)&&arr.length){
+        DB.semanas12.semanas=arr;
+        if(semStart)DB.semanas12.startDate=semStart;
+        migrou=true;
+      }
+    }catch(e){}
+  }
+  if(semIdeias){
+    try{
+      const arr=JSON.parse(semIdeias);
+      if(Array.isArray(arr)&&arr.length){
+        DB.semanas12.ideias=arr;
+        migrou=true;
+      }
+    }catch(e){}
+  }
+  if(migrou){save();toast('Dados migrados do localStorage!','tinf');}
+  localStorage.setItem(migKey,'1');
+}
+auth.onAuthStateChanged(async user=>{
+  if(user){
+    currentUser=user;
+    document.getElementById('login-screen').classList.remove('show');
+    // atualizar sidebar
+    const name=user.displayName||'Usuário';
+    document.getElementById('sb-name').textContent=name;
+    const av=document.getElementById('sb-avatar');
+    if(user.photoURL){av.innerHTML=`<img src="${user.photoURL}" alt="">`;}
+    else{av.textContent=name.charAt(0).toUpperCase();}
+    // carregar dados
+    await loadFromCloud();
+    initApp();
+  }else{
+    currentUser=null;
+    document.getElementById('login-screen').classList.add('show');
+  }
+});
+
+// ════════════════════════════════
+//  CONSTANTES
+// ════════════════════════════════
+const MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+const DIAS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+const CORES=['#58a6ff','#3fb950','#f85149','#e3b341','#bc8cff','#f0883e','#39d353','#79c0ff','#ff7b72','#d2a8ff','#ffa657','#56d364'];
+
+let mesSel=new Date().getMonth()+1;
+let delIdx=null,delTradeIdx=null,delCatIdx=null,editCatIdx=null,delParcIdx=null;
+let corSel=CORES[0];
+let cEquity=null,cEquityT=null,cSetup=null,cEmoc=null;
+let cDashAnual=null,cDashCat=null,cDashGanho=null,cSaldoLinha=null,cTradeLinha=null;
+let cAgCat=null,cAgTrade=null;
+let cExtCat=null,cExtGanho=null;
+let cMetasChart=null,cEmocT=null;
+let s12SemAtual=0;
+
+const SETUPS_ESTUDO=['Mínima','Máxima','Pullback 61% região','Pullback 50%','Pullback 38%','Respiro Raso','Rompimento','Outro'];
+const GATS_ESTUDO=['Absorção','Exaustão','Perda de volume','Montagem de posição','Rompimento','Sem gatilho'];
+
+const DB_DEFAULT={
+  lancamentos:[],trades:[],parcelas:[],
+  opsEstudo:[],estudos:[],
+  semanas12:{startDate:null,metas:[],semanas:[],ideias:[]},
+  cats:[
+    // ── GASTOS ──────────────────────────────────────────────────────
+    {nome:'MORADIA',         tipo:'GASTO',cor:'#58a6ff',subs:['Aluguel/Prestação','Condomínio','Energia','Água','Internet','Gás','Celular/Telefone','IPTU','Reforma/Manutenção','Serv. Gerais','Seguro residencial','Outro']},
+    {nome:'ALIMENTAÇÃO',     tipo:'GASTO',cor:'#3fb950',subs:['Supermercado','Restaurante','Delivery','Padaria','Lanche/Café','Açougue','Suplementos','Outro']},
+    {nome:'TRANSPORTE',      tipo:'GASTO',cor:'#e3b341',subs:['Gasolina','Parcela carro','Seguro/IPVA','Manutenção','Uber/99','Estacionamento','Pedágio','Multa','Outro']},
+    {nome:'SAÚDE',           tipo:'GASTO',cor:'#f85149',subs:['Remédios','Médico/Consulta','Plano de saúde','Dentista','Terapia','Psicólogo','Academia','Suplementos','Exames','Outro']},
+    {nome:'PESSOAL',         tipo:'GASTO',cor:'#ffa657',subs:['Cabelo/Barbearia','Filhos','Limpar Nome','Higiene','Cosméticos','Perfume','Manicure/Pedicure','Outro']},
+    {nome:'COMPRAS',         tipo:'GASTO',cor:'#79c0ff',subs:['Eletrônicos','Roupas/Calçados','Eletrodoméstico','Parcelas diversas','Móveis','Outro']},
+    {nome:'EDUCAÇÃO',        tipo:'GASTO',cor:'#d2a8ff',subs:['Cursos/IA','Mentoria','Livros','Plataformas','Workshop','Escola Filho','Material','Outro']},
+    {nome:'LAZER',           tipo:'GASTO',cor:'#bc8cff',subs:['Bares/Baladas','Viagens','Festas','Streaming','Cinema/Show','Hobby','Presente','Outro']},
+    {nome:'TRADE (custos)',  tipo:'GASTO',cor:'#f0883e',subs:['Aporte conta','Corretagem','IR Trade','Plataforma trading','Outro']},
+    {nome:'DÍVIDAS',         tipo:'GASTO',cor:'#ff7b72',subs:['Parcela banco','Parcela cartão','Empréstimo','Renegociação','Juros','Outro']},
+    {nome:'INVESTIMENTO',    tipo:'GASTO',cor:'#56d364',subs:['Reserva Emergência','Reserva Sonhos','Ações','FII','Tesouro Direto','CDB/RDB','Criptomoedas','Outro']},
+    {nome:'OUTROS',          tipo:'GASTO',cor:'#8b949e',subs:['Taxa/Imposto','Serviços','Diverso','Outro']},
+    // ── GANHOS ──────────────────────────────────────────────────────
+    {nome:'DAY TRADE',       tipo:'GANHO',cor:'#f0883e',subs:['DOLFUT','WINFUT','EURUSD','Outro']},
+    {nome:'SALÁRIO',         tipo:'GANHO',cor:'#3fb950',subs:['PC','PJ','Adiantamento','13º','Férias','Outro']},
+    {nome:'JUROS/RENDA FIXA',tipo:'GANHO',cor:'#56d364',subs:['CDB','Tesouro Direto','LCI/LCA','Poupança','FII','Outro']},
+    {nome:'ALUGUEL',         tipo:'GANHO',cor:'#e3b341',subs:['Imóvel','Temporada','Financiamento recebido','Outro']},
+    {nome:'INFOPRODUTO',     tipo:'GANHO',cor:'#bc8cff',subs:['Mentoria','Curso online','Consultoria','Afiliado','Outro']},
+    {nome:'VENDAS',          tipo:'GANHO',cor:'#79c0ff',subs:['Produto','Marketplace','Serviço','Outro']},
+    {nome:'BÔNUS',           tipo:'GANHO',cor:'#ffa657',subs:['Comissão','Premiação','Cashback','Outro']},
+    {nome:'OUTROS GANHOS',   tipo:'GANHO',cor:'#8b949e',subs:['Reembolso','Presente','Herança','Diverso','Outro']},
+  ],
+  metas:{}
+};
+let DB=JSON.parse(JSON.stringify(DB_DEFAULT));
+
+// ════════════════════════════════
+//  UTILS
+// ════════════════════════════════
+function R(v){return'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function soma(d,tipo){return d.filter(l=>l.tipo===tipo).reduce((a,l)=>a+l.valor,0);}
+function save(){saveToCloud();}
+function closeOv(id){document.getElementById(id).classList.remove('open');}
+function toast(msg,cls='tok'){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast show ${cls}`;clearTimeout(t._t);t._t=setTimeout(()=>t.className='toast',2800);}
+function setHoje(id){const el=document.getElementById(id);if(el)el.value=new Date().toISOString().split('T')[0];}
+function getFiltrados(){return DB.lancamentos.filter(l=>{if(!l.data)return false;return parseInt(l.data.split('-')[1])===mesSel;});}
+function getTradesFiltrados(){return DB.trades.filter(t=>{if(!t.data)return false;return parseInt(t.data.split('-')[1])===mesSel;});}
+function hexToRgb(h){const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return`${r},${g},${b}`;}
+const CHART_COLORS=['#58a6ff','#3fb950','#f85149','#e3b341','#bc8cff','#ff7b72','#79c0ff','#56d364','#ffa657','#d2a8ff'];
+function mkDonut(canvasId,wrapId,labels,data,h=200){
+  const wrap=document.getElementById(wrapId);
+  if(!wrap)return null;
+  const hasData=data.some(v=>v>0);
+  if(!hasData){wrap.innerHTML=`<div style="height:${h}px;display:flex;align-items:center;justify-content:center;color:#8b949e;font-size:.85rem">Sem dados no período</div>`;return null;}
+  wrap.innerHTML='<canvas id="'+canvasId+'"></canvas>';
+  const cv=document.getElementById(canvasId);
+  return new Chart(cv,{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:CHART_COLORS.slice(0,labels.length),borderWidth:0,hoverOffset:6}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'right',labels:{color:'#8b949e',font:{size:10},boxWidth:10,padding:8}},tooltip:{callbacks:{label:ctx=>`${ctx.label}: R$${ctx.parsed.toFixed(2)}`}}}}});
+}
+function mkBar(canvasId,wrapId,labels,datasets,h=200,opts={}){
+  const wrap=document.getElementById(wrapId);
+  if(!wrap)return null;
+  const hasData=datasets.some(ds=>ds.data.some(v=>v!==0));
+  if(!hasData){wrap.innerHTML=`<div style="height:${h}px;display:flex;align-items:center;justify-content:center;color:#8b949e;font-size:.85rem">Sem dados no período</div>`;return null;}
+  wrap.innerHTML='<canvas id="'+canvasId+'"></canvas>';
+  const cv=document.getElementById(canvasId);
+  return new Chart(cv,{type:'bar',data:{labels,datasets},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}},tooltip:{}},
+      scales:{x:{ticks:{color:'#8b949e',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},
+              y:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.05)'}}},
+      ...opts}});
+}
+
+// ════════════════════════════════
+//  NAVEGAÇÃO
+// ════════════════════════════════
+function go(panel){
+  closeMobileMenu();
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.getElementById('panel-'+panel).classList.add('active');
+  const titles={dash:'Dashboard',agente:'Agente Gestor',lanc:'Novo Lançamento',
+    extrato:'Extrato',metas:'Metas Mensais',parc:'Parcelas',
+    trading:'Operações de Trading',
+    estudo:'Estudo & Replay',
+    'analise-estudo':'Análise de Estudo',
+    semanas12:'12 Semanas',
+    cats:'Categorias',rel:'Exportar'};
+  document.getElementById('topbar-title').textContent=titles[panel]||panel;
+  const idx={dash:0,agente:1,lanc:2,extrato:3,metas:4,parc:5,trading:6,estudo:7,'analise-estudo':8,semanas12:9,cats:10,rel:11};
+  const nis=document.querySelectorAll('.ni');
+  if(idx[panel]!==undefined)nis[idx[panel]].classList.add('active');
+  if(panel==='dash')renderDash();
+  if(panel==='agente')renderAgente();
+  if(panel==='extrato')renderExtrato();
+  if(panel==='trading'){renderTradeCards();renderTradeCharts();renderTrades();}
+  if(panel==='metas')renderMetas();
+  if(panel==='cats')renderCats();
+  if(panel==='parc'){syncParcCats();renderParcCards();renderParcelas();}
+  if(panel==='estudo'){syncEstudoSelects();renderOpEstudo();renderSessaoEstudo();}
+  if(panel==='analise-estudo')renderAnaliseEstudo();
+  if(panel==='semanas12')renderSemanas12();
+}
+
+function initMeses(){
+  const pills=document.getElementById('mes-pills');
+  pills.innerHTML='';
+  for(let m=1;m<=12;m++){
+    const btn=document.createElement('button');
+    btn.className='mp'+(m===mesSel?' on':'');
+    btn.textContent=MESES[m-1];
+    btn.onclick=()=>setMes(m);
+    pills.appendChild(btn);
+  }
+}
+function setMes(m){
+  mesSel=m;
+  document.querySelectorAll('.mp').forEach((b,i)=>b.classList.toggle('on',i+1===m));
+  const panel=document.querySelector('.panel.active').id.replace('panel-','');
+  if(panel==='dash')renderDash();
+  if(panel==='agente')renderAgente();
+  if(panel==='extrato')renderExtrato();
+  if(panel==='metas')renderMetas();
+  if(panel==='trading'){renderTradeCards();renderTradeCharts();renderTrades();}
+}
+
+// ════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════
+function renderDash(){
+  const d=getFiltrados();
+  const g=soma(d,'GANHO'),gs=soma(d,'GASTO'),sl=g-gs;
+  const t=getTradesFiltrados();
+  const tPnl=t.reduce((a,x)=>a+x.resultado,0);
+  const wins=t.filter(x=>x.resultado>0).length;
+  const wr=t.length>0?(wins/t.length*100).toFixed(1):0;
+
+  document.getElementById('dash-cards').innerHTML=`
+    <div class="card ${sl>=0?'cg':'cr2'}">
+      <div class="cl">Saldo do Mês</div>
+      <div class="cv ${sl>=0?'vg':'vr'}">${sl>=0?'+':''}${R(sl)}</div>
+      <div class="cs">${MESES[mesSel-1]}</div>
+    </div>
+    <div class="card cg"><div class="cl">Total Ganhos</div><div class="cv vg">+${R(g)}</div><div class="cs">${d.filter(l=>l.tipo==='GANHO').length} lançamentos</div></div>
+    <div class="card cr2"><div class="cl">Total Gastos</div><div class="cv vr">${R(gs)}</div><div class="cs">${d.filter(l=>l.tipo==='GASTO').length} lançamentos</div></div>
+    <div class="card cb"><div class="cl">% Gastos/Ganhos</div><div class="cv vb">${g>0?(gs/g*100).toFixed(1):0}%</div><div class="cs">Meta: abaixo de 80%</div></div>`;
+
+  document.getElementById('trade-cards').innerHTML=`
+    <div class="card ${tPnl>=0?'cg':'cr2'}">
+      <div class="cl">Resultado Trading</div>
+      <div class="cv ${tPnl>=0?'vg':'vr'}">${tPnl>=0?'+':''}${R(tPnl)}</div>
+      <div class="cs">${t.length} ops · Win rate ${wr}%</div>
+    </div>
+    <div class="card cb"><div class="cl">Operações</div><div class="cv vb">${t.length}</div><div class="cs">${wins}W / ${t.filter(x=>x.resultado<0).length}L</div></div>`;
+
+  const tAll=[...DB.trades].sort((a,b)=>a.data.localeCompare(b.data));
+  let acum=0;
+  const eqData=tAll.map(x=>{acum+=x.resultado;return acum;});
+  if(cEquity)cEquity.destroy();
+  const cv=document.getElementById('c-equity');
+  const wrap=document.getElementById('c-equity-wrap');
+  if(!eqData.length){
+    if(wrap)wrap.innerHTML='<div style="height:200px;display:flex;align-items:center;justify-content:center;color:#8b949e;font-size:.85rem">Nenhuma operação registrada ainda</div>';
+  } else {
+    if(wrap)wrap.innerHTML='<canvas id="c-equity"></canvas>';
+    const cv2=document.getElementById('c-equity');
+    cEquity=new Chart(cv2,{type:'line',
+      data:{labels:tAll.map((_,i)=>'Op '+(i+1)),datasets:[{data:eqData,borderWidth:2,pointRadius:3,tension:.3,fill:true,
+        borderColor:'#58a6ff',backgroundColor:'rgba(88,166,255,.07)',
+        pointBackgroundColor:eqData.map(v=>v>=0?'#3fb950':'#f85149')}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{ticks:{color:'#8b949e',font:{size:10},maxTicksLimit:8},grid:{color:'rgba(255,255,255,.04)'}},
+                y:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.05)'}}}}});
+  }
+
+  // Gráfico barras anual (Ganhos vs Gastos)
+  const anoAtualN=new Date().getFullYear();
+  const gAnual=MESES.map((_,i)=>{const m=i+1;const l=DB.lancamentos.filter(x=>{const d=new Date(x.data+'T12:00:00');return d.getFullYear()===anoAtualN&&d.getMonth()+1===m;});return soma(l,'GANHO');});
+  const gsAnual=MESES.map((_,i)=>{const m=i+1;const l=DB.lancamentos.filter(x=>{const d=new Date(x.data+'T12:00:00');return d.getFullYear()===anoAtualN&&d.getMonth()+1===m;});return soma(l,'GASTO');});
+  if(cDashAnual)cDashAnual.destroy();
+  cDashAnual=mkBar('c-dash-anual','c-dash-anual-wrap',MESES.map(m=>m.slice(0,3)),[
+    {label:'Ganhos',data:gAnual,backgroundColor:'rgba(63,185,80,.75)',borderRadius:4,borderWidth:0},
+    {label:'Gastos',data:gsAnual,backgroundColor:'rgba(248,81,73,.75)',borderRadius:4,borderWidth:0}
+  ],200,{scales:{x:{stacked:false,ticks:{color:'#8b949e',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.05)'}}}});
+
+  // Donut gastos por categoria
+  const d2=getFiltrados();
+  const catGasto={},catGanho={};
+  d2.filter(l=>l.tipo==='GASTO').forEach(l=>catGasto[l.cat]=(catGasto[l.cat]||0)+l.valor);
+  d2.filter(l=>l.tipo==='GANHO').forEach(l=>catGanho[l.cat]=(catGanho[l.cat]||0)+l.valor);
+  if(cDashCat)cDashCat.destroy();
+  cDashCat=mkDonut('c-dash-cat','c-dash-cat-wrap',Object.keys(catGasto),Object.values(catGasto));
+  if(cDashGanho)cDashGanho.destroy();
+  cDashGanho=mkDonut('c-dash-ganho','c-dash-ganho-wrap',Object.keys(catGanho),Object.values(catGanho));
+
+  // ── Gráfico de linha: Saldo mensal (Ganhos - Gastos por mês)
+  const anoAtual=new Date().getFullYear();
+  let totalG=0,totalGs=0,totalTrade=0;
+  const dadosMensais=MESES.map((_,i)=>{
+    const m=i+1;
+    const lanc=DB.lancamentos.filter(l=>{const dd=new Date(l.data+'T12:00:00');return dd.getFullYear()===anoAtual&&dd.getMonth()+1===m;});
+    const trs=DB.trades.filter(t=>{const dd=new Date(t.data+'T12:00:00');return dd.getFullYear()===anoAtual&&dd.getMonth()+1===m;});
+    const g=soma(lanc,'GANHO'),gs=soma(lanc,'GASTO'),sl=g-gs;
+    const tPnl=trs.reduce((a,x)=>a+x.resultado,0);
+    const wins=trs.filter(x=>x.resultado>0).length;
+    const wr=trs.length>0?Math.round(wins/trs.length*100):null;
+    totalG+=g;totalGs+=gs;totalTrade+=tPnl;
+    return{m,nm:MESES[i],g,gs,sl,tPnl,tLen:trs.length,wins,wr,pctGG:g>0?Math.round(gs/g*100):null};
+  });
+  const lblMes=MESES.map(m=>m.slice(0,3));
+  const saldoData=dadosMensais.map(x=>x.sl||null);
+  const tradeData=dadosMensais.map(x=>x.tLen>0?x.tPnl:null);
+
+  if(cSaldoLinha)cSaldoLinha.destroy();
+  const slWrap=document.getElementById('c-saldo-linha-wrap');
+  if(slWrap){
+    slWrap.innerHTML='<canvas id="c-saldo-linha"></canvas>';
+    cSaldoLinha=new Chart(document.getElementById('c-saldo-linha'),{type:'line',
+      data:{labels:lblMes,datasets:[
+        {label:'Saldo',data:saldoData,borderColor:'#58a6ff',backgroundColor:'rgba(88,166,255,.1)',
+         borderWidth:2,pointRadius:5,pointBackgroundColor:saldoData.map(v=>v===null?'transparent':v>=0?'#3fb950':'#f85149'),
+         tension:.35,fill:true,spanGaps:false},
+        {label:'Zero',data:Array(12).fill(0),borderColor:'rgba(255,255,255,.12)',borderDash:[5,5],
+         borderWidth:1,pointRadius:0,fill:false}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`R$ ${(ctx.raw||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}`}}},
+        scales:{x:{ticks:{color:'#8b949e',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},
+                y:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.05)'}}}}});
+  }
+
+  // ── Gráfico de linha: Trading mensal
+  if(cTradeLinha)cTradeLinha.destroy();
+  const tlWrap=document.getElementById('c-trade-linha-wrap');
+  if(tlWrap){
+    tlWrap.innerHTML='<canvas id="c-trade-linha"></canvas>';
+    cTradeLinha=new Chart(document.getElementById('c-trade-linha'),{type:'line',
+      data:{labels:lblMes,datasets:[
+        {label:'Trading',data:tradeData,borderColor:'#3fb950',backgroundColor:'rgba(63,185,80,.08)',
+         borderWidth:2,pointRadius:5,pointBackgroundColor:tradeData.map(v=>v===null?'transparent':v>=0?'#3fb950':'#f85149'),
+         tension:.35,fill:true,spanGaps:false},
+        {label:'Zero',data:Array(12).fill(0),borderColor:'rgba(255,255,255,.12)',borderDash:[5,5],
+         borderWidth:1,pointRadius:0,fill:false}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`R$ ${(ctx.raw||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}`}}},
+        scales:{x:{ticks:{color:'#8b949e',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},
+                y:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.05)'}}}}});
+  }
+
+  // ── Tabela anual completa (ao final do dashboard)
+  const totalSl=totalG-totalGs;
+  const totalOps=DB.trades.filter(t=>{const dd=new Date(t.data+'T12:00:00');return dd.getFullYear()===anoAtual;}).length;
+  const totalWins=DB.trades.filter(t=>{const dd=new Date(t.data+'T12:00:00');return dd.getFullYear()===anoAtual&&t.resultado>0;}).length;
+  const totalWr=totalOps>0?Math.round(totalWins/totalOps*100):null;
+  const pctGGtotal=totalG>0?Math.round(totalGs/totalG*100):null;
+  const rows=dadosMensais.map(x=>{
+    const isAtual=x.m===mesSel;
+    return `<tr style="${isAtual?'background:rgba(88,166,255,.06)':''}">
+      <td style="padding:6px 10px;color:${isAtual?'#58a6ff':'#8b949e'};font-weight:${isAtual?'700':'400'};font-size:.78rem">${x.nm}</td>
+      <td style="padding:6px 10px;text-align:right;color:#3fb950;font-size:.78rem">${x.g>0?'+'+R(x.g):'—'}</td>
+      <td style="padding:6px 10px;text-align:right;color:#f85149;font-size:.78rem">${x.gs>0?R(x.gs):'—'}</td>
+      <td style="padding:6px 10px;text-align:right;font-weight:600;font-size:.78rem;color:${x.sl>0?'#3fb950':x.sl<0?'#f85149':'#8b949e'}">${x.sl!==0?(x.sl>0?'+':'')+R(x.sl):'—'}</td>
+      <td style="padding:6px 10px;text-align:right;font-size:.78rem;color:${x.pctGG!==null&&x.pctGG>100?'#f85149':x.pctGG!==null&&x.pctGG>80?'#e3b341':'#3fb950'}">${x.pctGG!==null?x.pctGG+'%':'—'}</td>
+      <td style="padding:6px 10px;text-align:right;font-size:.78rem;color:${x.tPnl>0?'#3fb950':x.tPnl<0?'#f85149':'#8b949e'}">${x.tLen>0?(x.tPnl>=0?'+':'')+R(x.tPnl):'—'}</td>
+      <td style="padding:6px 10px;text-align:center;font-size:.78rem">${x.tLen>0?x.tLen:'—'}</td>
+      <td style="padding:6px 10px;text-align:center;font-size:.78rem;color:${x.wr!==null&&x.wr>=50?'#3fb950':'#f85149'}">${x.wr!==null?x.wr+'%':'—'}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('resumo-anual').innerHTML=`
+    <div style="overflow-x:auto;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:4px">
+    <table style="width:100%;border-collapse:collapse;font-size:.78rem">
+      <thead><tr style="border-bottom:1px solid var(--border)">
+        <th style="padding:8px 10px;text-align:left;color:#8b949e;font-weight:600;font-size:.72rem">Mês</th>
+        <th style="padding:8px 10px;text-align:right;color:#3fb950;font-weight:600;font-size:.72rem">Ganhos</th>
+        <th style="padding:8px 10px;text-align:right;color:#f85149;font-weight:600;font-size:.72rem">Gastos</th>
+        <th style="padding:8px 10px;text-align:right;color:#8b949e;font-weight:600;font-size:.72rem">Saldo</th>
+        <th style="padding:8px 10px;text-align:right;color:#e3b341;font-weight:600;font-size:.72rem">%G/G</th>
+        <th style="padding:8px 10px;text-align:right;color:#58a6ff;font-weight:600;font-size:.72rem">Trading</th>
+        <th style="padding:8px 10px;text-align:center;color:#8b949e;font-weight:600;font-size:.72rem">Ops</th>
+        <th style="padding:8px 10px;text-align:center;color:#8b949e;font-weight:600;font-size:.72rem">Win%</th>
+      </tr></thead>
+      <tbody>${rows}
+      <tr style="border-top:2px solid var(--border)">
+        <td style="padding:6px 10px;font-size:.78rem;font-weight:700;color:#58a6ff">TOTAL ${anoAtual}</td>
+        <td style="padding:6px 10px;text-align:right;color:#3fb950;font-size:.78rem;font-weight:700">${totalG>0?'+'+R(totalG):'—'}</td>
+        <td style="padding:6px 10px;text-align:right;color:#f85149;font-size:.78rem;font-weight:700">${totalGs>0?R(totalGs):'—'}</td>
+        <td style="padding:6px 10px;text-align:right;font-size:.78rem;font-weight:700;color:${totalSl>0?'#3fb950':totalSl<0?'#f85149':'#8b949e'}">${totalSl!==0?(totalSl>0?'+':'')+R(totalSl):'—'}</td>
+        <td style="padding:6px 10px;text-align:right;font-size:.78rem;font-weight:700;color:${pctGGtotal!==null&&pctGGtotal>100?'#f85149':pctGGtotal!==null&&pctGGtotal>80?'#e3b341':'#3fb950'}">${pctGGtotal!==null?pctGGtotal+'%':'—'}</td>
+        <td style="padding:6px 10px;text-align:right;font-size:.78rem;font-weight:700;color:${totalTrade>0?'#3fb950':totalTrade<0?'#f85149':'#8b949e'}">${totalTrade!==0?(totalTrade>0?'+':'')+R(totalTrade):'—'}</td>
+        <td style="padding:6px 10px;text-align:center;font-size:.78rem;font-weight:700">${totalOps||'—'}</td>
+        <td style="padding:6px 10px;text-align:center;font-size:.78rem;font-weight:700;color:${totalWr!==null&&totalWr>=50?'#3fb950':'#f85149'}">${totalWr!==null?totalWr+'%':'—'}</td>
+      </tr>
+      </tbody>
+    </table>
+    </div>`;
+}
+
+// ════════════════════════════════
+//  AGENTE GESTOR
+// ════════════════════════════════
+function renderAgente(){
+  const d=getFiltrados();
+  const g=soma(d,'GANHO'),gs=soma(d,'GASTO'),sl=g-gs,pct=g>0?gs/g*100:0;
+  const tot={};d.filter(l=>l.tipo==='GASTO').forEach(l=>tot[l.cat]=(tot[l.cat]||0)+l.valor);
+  const trades=getTradesFiltrados();
+  const tPnl=trades.reduce((a,t)=>a+t.resultado,0);
+  const wins=trades.filter(t=>t.resultado>0).length;
+  const wr=trades.length>0?wins/trades.length*100:0;
+  const inv=d.filter(l=>l.cat==='INVESTIMENTO').reduce((a,l)=>a+l.valor,0);
+  const delivery=d.filter(l=>l.sub==='Delivery').reduce((a,l)=>a+l.valor,0);
+
+  let score=100;
+  if(pct>100)score-=40;else if(pct>80)score-=20;else if(pct>60)score-=10;
+  if(g>0&&inv/g<0.1)score-=15;
+  if(delivery>300)score-=10;
+  if(sl<0)score-=15;
+  if(trades.length===0)score-=10;
+  if(wr>0&&wr<40)score-=10;
+  score=Math.max(0,Math.min(100,score));
+
+  const scoreCor=score>=70?'var(--green)':score>=40?'var(--yellow)':'var(--red)';
+  const scoreTxt=score>=70?'Boa saúde financeira':score>=40?'Atenção necessária':'Situação crítica';
+  document.getElementById('score-val').textContent=score;
+  document.getElementById('score-val').style.color=scoreCor;
+  document.getElementById('score-label').textContent=scoreTxt;
+  document.getElementById('health-ptr').style.left=`calc(${score}% - 2px)`;
+
+  document.getElementById('agente-resumo').innerHTML=`
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:.8rem;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px">
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Total Ganhos</span><span style="color:var(--green);font-weight:700">${R(g)}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Total Gastos</span><span style="color:var(--red);font-weight:700">${R(gs)}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Saldo</span><span style="color:${sl>=0?'var(--green)':'var(--red)'};font-weight:700">${sl<0?'-':''}${R(Math.abs(sl))}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">% Gastos/Ganhos</span><span style="color:${pct>100?'var(--red)':pct>80?'var(--yellow)':'var(--green)'};font-weight:700">${pct.toFixed(1)}%</span></div>
+      <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px"></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Resultado Trading</span><span style="color:${tPnl>=0?'var(--green)':'var(--red)'};font-weight:700">${tPnl>=0?'+':''}${R(tPnl)}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Win Rate</span><span style="font-weight:700">${trades.length>0?wr.toFixed(1)+'%':'—'}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Trades registrados</span><span style="font-weight:700">${trades.length}</span></div>
+    </div>`;
+
+  const insights=[];
+  if(pct>100)insights.push({tipo:'danger',ico:'🔴',t:'Gastos acima da renda',b:`${pct.toFixed(1)}% gasto. Corte imediato necessário.`});
+  else if(pct>80)insights.push({tipo:'warn',ico:'🟡',t:'Gastos próximos do limite',b:`${pct.toFixed(1)}% da renda. Meta é 80%.`});
+  else if(g>0)insights.push({tipo:'good',ico:'🟢',t:'Gastos sob controle',b:`${pct.toFixed(1)}% da renda.`});
+  if(sl<0)insights.push({tipo:'danger',ico:'🔴',t:`Saldo negativo: ${R(Math.abs(sl))}`,b:'O mês fechou no vermelho.'});
+  if(inv===0&&g>0)insights.push({tipo:'danger',ico:'🔴',t:'Nenhum investimento',b:'Defina pelo menos 10% da renda para guardar.'});
+  if(delivery>200)insights.push({tipo:'warn',ico:'🟡',t:`Delivery alto: ${R(delivery)}`,b:'Considere cozinhar mais em casa.'});
+  if(trades.length===0)insights.push({tipo:'warn',ico:'🟡',t:'Sem trades registrados',b:'Registre suas operações para acompanhar.'});
+  else if(wr>0&&wr<40)insights.push({tipo:'danger',ico:'🔴',t:`Win rate baixo: ${wr.toFixed(1)}%`,b:'Revise o setup e gerenciamento de risco.'});
+  else if(wr>=55)insights.push({tipo:'good',ico:'🟢',t:`Bom win rate: ${wr.toFixed(1)}%`,b:'Continue com a disciplina.'});
+  document.getElementById('insights').innerHTML=insights.map(i=>`
+    <div class="insight ${i.tipo}"><span class="ins-ico">${i.ico}</span>
+      <div><div class="ins-t">${i.t}</div><div class="ins-b">${i.b}</div></div>
+    </div>`).join('');
+
+  const recs=[];
+  if(pct>80||sl<0)recs.push({n:1,cor:'#f85149',t:'Reduza os maiores gastos variáveis',d:'Identifique cortes de 10-20% nas categorias mais altas.'});
+  if(inv===0)recs.push({n:recs.length+1,cor:'#e3b341',t:'Crie uma reserva de emergência',d:'Separe ao menos R$200–500 por mês em Reserva.'});
+  if(trades.length===0)recs.push({n:recs.length+1,cor:'#58a6ff',t:'Comece a registrar suas operações',d:'Use a aba Trading para registrar cada operação.'});
+  if(trades.length>0&&wr<50)recs.push({n:recs.length+1,cor:'#f85149',t:'Reduza o número de trades por dia',d:'Win rate abaixo de 50%: máximo 2 setups por dia.'});
+  document.getElementById('recomendacoes').innerHTML=recs.map(r=>`
+    <div class="rec-card">
+      <div class="rec-head">
+        <div class="rec-num" style="background:rgba(${hexToRgb(r.cor)},.2);color:${r.cor}">${r.n}</div>
+        <div style="font-size:.85rem;font-weight:700">${r.t}</div>
+      </div>
+      <div style="font-size:.78rem;color:var(--muted);line-height:1.6;padding-left:38px">${r.d}</div>
+    </div>`).join('');
+
+  // Donut gastos por categoria
+  const catGs={};
+  d.filter(l=>l.tipo==='GASTO').forEach(l=>catGs[l.cat]=(catGs[l.cat]||0)+l.valor);
+  if(cAgCat)cAgCat.destroy();
+  cAgCat=mkDonut('c-ag-cat','c-ag-cat-wrap',Object.keys(catGs),Object.values(catGs));
+
+  // Barras trading por mês
+  const anoN=new Date().getFullYear();
+  const trMeses=MESES.map((_,i)=>{const m=i+1;return DB.trades.filter(t=>{const d=new Date(t.data+'T12:00:00');return d.getFullYear()===anoN&&d.getMonth()+1===m;}).reduce((a,x)=>a+x.resultado,0);});
+  if(cAgTrade)cAgTrade.destroy();
+  cAgTrade=mkBar('c-ag-trade','c-ag-trade-wrap',MESES.map(m=>m.slice(0,3)),[
+    {label:'Trading',data:trMeses,backgroundColor:trMeses.map(v=>v>=0?'rgba(63,185,80,.75)':'rgba(248,81,73,.75)'),borderRadius:4,borderWidth:0}
+  ],200);
+}
+
+// ════════════════════════════════
+//  LANÇAR
+// ════════════════════════════════
+function syncCats(){
+  const tipo=document.getElementById('f-tipo').value;
+  const sel=document.getElementById('f-cat');
+  sel.innerHTML=DB.cats.filter(c=>c.tipo===tipo).map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
+  syncSubs();
+}
+function syncSubs(){
+  const c=DB.cats.find(x=>x.nome===document.getElementById('f-cat').value);
+  document.getElementById('f-sub').innerHTML=(c?c.subs:[]).map(s=>`<option>${s}</option>`).join('');
+}
+function salvarLanc(){
+  const data=document.getElementById('f-data').value;
+  const tipo=document.getElementById('f-tipo').value;
+  const cat=document.getElementById('f-cat').value;
+  const sub=document.getElementById('f-sub').value;
+  const desc=document.getElementById('f-desc').value.trim();
+  const valor=parseFloat(document.getElementById('f-val').value);
+  const pagto=document.getElementById('f-pagto').value;
+  const obs=document.getElementById('f-obs').value.trim();
+  if(!data){toast('Informe a data','terr');return;}
+  if(!valor||valor<=0){toast('Valor inválido','terr');return;}
+  DB.lancamentos.push({id:Date.now(),data,tipo,cat,sub,desc,valor,pagto,obs,dia:DIAS[new Date(data+'T12:00:00').getDay()]});
+  save();['f-desc','f-val','f-obs'].forEach(id=>document.getElementById(id).value='');setHoje('f-data');
+  toast('Salvo!');go('extrato');
+}
+function salvarTrading(){
+  const data=document.getElementById('tr-data').value;
+  const tipo=document.getElementById('tr-tipo').value;
+  const valor=parseFloat(document.getElementById('tr-val').value);
+  const obs=document.getElementById('tr-obs').value.trim();
+  if(!data){toast('Informe o mês','terr');return;}
+  if(!valor||valor<=0){toast('Valor inválido','terr');return;}
+  const [ano,mes]=data.split('-');
+  const desc=(tipo==='GANHO'?'Lucro':'Prejuízo')+' Trading — '+MESES[parseInt(mes)-1]+'/'+ano;
+  DB.lancamentos.push({id:Date.now(),data:data+'-01',tipo,cat:'DAY TRADE',sub:'WDO',desc,valor,pagto:'Transferência',obs,dia:DIAS[new Date(data+'-01T12:00:00').getDay()]});
+  save();toast('Resultado registrado!');
+  document.getElementById('tr-val').value='';document.getElementById('tr-obs').value='';
+}
+
+// ════════════════════════════════
+//  EXTRATO
+// ════════════════════════════════
+function renderExtrato(){
+  const q=(document.getElementById('ext-q')||{value:''}).value.toLowerCase();
+  const ft=(document.getElementById('ext-tipo')||{value:''}).value;
+  let d=getFiltrados();
+  if(ft)d=d.filter(l=>l.tipo===ft);
+  if(q)d=d.filter(l=>(l.cat||'').toLowerCase().includes(q)||(l.sub||'').toLowerCase().includes(q)||(l.desc||'').toLowerCase().includes(q));
+  d.sort((a,b)=>b.data.localeCompare(a.data));
+
+  // Gráficos por categoria
+  const extCatG={},extCatGs={};
+  getFiltrados().filter(l=>l.tipo==='GANHO').forEach(l=>extCatG[l.cat]=(extCatG[l.cat]||0)+l.valor);
+  getFiltrados().filter(l=>l.tipo==='GASTO').forEach(l=>extCatGs[l.cat]=(extCatGs[l.cat]||0)+l.valor);
+  if(cExtCat)cExtCat.destroy();
+  cExtCat=mkDonut('c-ext-cat','c-ext-cat-wrap',Object.keys(extCatGs),Object.values(extCatGs),180);
+  if(cExtGanho)cExtGanho.destroy();
+  cExtGanho=mkDonut('c-ext-ganho','c-ext-ganho-wrap',Object.keys(extCatG),Object.values(extCatG),180);
+  const tb=document.getElementById('ext-body');
+  if(!d.length){tb.innerHTML=`<tr><td colspan="10" class="empty">Nenhum lançamento. Vá em "Novo Lançamento".</td></tr>`;return;}
+  tb.innerHTML=d.map(l=>{
+    const cor=l.tipo==='GANHO'?'var(--green)':'var(--red)';
+    const tagBg=l.tipo==='GANHO'?'rgba(63,185,80,.15)':'rgba(248,81,73,.15)';
+    const catCor=(DB.cats.find(c=>c.nome===l.cat)||{cor:'#8b949e'}).cor;
+    const idx=DB.lancamentos.findIndex(x=>x.id===l.id);
+    return `<tr>
+      <td>${l.data.split('-').reverse().join('/')}</td>
+      <td style="color:var(--muted)">${l.dia||''}</td>
+      <td><span class="tag" style="background:${tagBg};color:${cor}">${l.tipo}</span></td>
+      <td><span style="color:${catCor};font-weight:600">${l.cat}</span></td>
+      <td style="color:var(--muted)">${l.sub||''}</td>
+      <td>${l.desc||'—'}</td>
+      <td style="color:${cor};font-weight:700">${l.tipo==='GANHO'?'+':'-'}${R(l.valor)}</td>
+      <td style="color:var(--muted);font-size:.73rem">${l.pagto}</td>
+      <td style="color:var(--faint);font-size:.73rem">${l.obs||''}</td>
+      <td><button class="btn btn-g btn-ico btn-sm" style="color:var(--red)" onclick="openDelLanc(${idx})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+function openDelLanc(i){delIdx=i;document.getElementById('ov-del').classList.add('open');}
+function confirmDel(){if(delIdx!==null){DB.lancamentos.splice(delIdx,1);save();toast('Excluído');renderExtrato();}closeOv('ov-del');delIdx=null;}
+
+// ════════════════════════════════
+//  METAS
+// ════════════════════════════════
+function renderMetas(){
+  const sel=document.getElementById('meta-cat');
+  sel.innerHTML=DB.cats.filter(c=>c.tipo==='GASTO').map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
+  const d=getFiltrados();
+  const tot={};d.filter(l=>l.tipo==='GASTO').forEach(l=>tot[l.cat]=(tot[l.cat]||0)+l.valor);
+  const metasM=DB.metas[mesSel]||{};
+  const allCats=[...new Set([...Object.keys(tot),...Object.keys(metasM)])];
+  // Gráfico meta vs real
+  if(cMetasChart)cMetasChart.destroy();
+  const mLabels=allCats.filter(c=>metasM[c]>0||tot[c]>0);
+  if(mLabels.length){
+    cMetasChart=mkBar('c-metas','c-metas-wrap',mLabels,[
+      {label:'Meta',data:mLabels.map(c=>metasM[c]||0),backgroundColor:'rgba(88,166,255,.5)',borderRadius:4,borderWidth:0},
+      {label:'Gasto Real',data:mLabels.map(c=>tot[c]||0),backgroundColor:mLabels.map(c=>{const p=metasM[c]>0?(tot[c]||0)/metasM[c]:0;return p>=1?'rgba(248,81,73,.8)':p>=.75?'rgba(227,179,65,.8)':'rgba(63,185,80,.8)';}),borderRadius:4,borderWidth:0}
+    ],220,{indexAxis:'y',scales:{x:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#e6edf3',font:{size:10}},grid:{display:false}}}});
+  } else {
+    const w=document.getElementById('c-metas-wrap');
+    if(w)w.innerHTML='<div style="height:220px;display:flex;align-items:center;justify-content:center;color:#8b949e;font-size:.85rem">Sem metas definidas</div>';
+  }
+
+  if(!allCats.length){document.getElementById('metas-grid').innerHTML='<div style="padding:20px;color:var(--muted);font-size:.85rem">Defina metas e registre gastos para ver o progresso.</div>';return;}
+  document.getElementById('metas-grid').innerHTML=allCats.map(cat=>{
+    const gasto=tot[cat]||0,meta=metasM[cat]||0;
+    const pct=meta>0?Math.min((gasto/meta)*100,100):0;
+    const cor=(DB.cats.find(c=>c.nome===cat)||{cor:'#64748b'}).cor;
+    const barCor=pct>=100?'var(--red)':pct>=75?'var(--yellow)':'var(--green)';
+    const alerta=meta>0&&gasto>=meta?'🚨':meta>0&&gasto>=meta*0.75?'⚠️':'';
+    return `<div class="meta-card">
+      <div class="meta-head">
+        <div class="meta-cat"><div class="meta-dot" style="background:${cor}"></div>${cat} ${alerta}</div>
+        <div class="meta-val">${meta>0?`Meta: ${R(meta)}`:'Sem meta'}</div>
+      </div>
+      <div class="pbar-bg"><div class="pbar" style="width:${pct}%;background:${barCor}"></div></div>
+      <div class="meta-nums">
+        <span style="color:var(--red)">${R(gasto)} gasto</span>
+        <span>${pct.toFixed(0)}%</span>
+        <span style="color:${meta>gasto?'var(--green)':'var(--red)'}">Resta ${meta>0?R(Math.max(meta-gasto,0)):'—'}</span>
+      </div>
+      <div class="meta-input-row">
+        <input type="number" id="mi-${cat}" placeholder="Novo limite R$..." value="${meta||''}" min="0" step="10"
+          onkeydown="if(event.key==='Enter')atualizarMeta('${cat}')">
+        <button class="btn btn-s btn-sm" onclick="atualizarMeta('${cat}')">✓</button>
+        ${meta>0?`<button class="btn btn-g btn-sm" onclick="removerMeta('${cat}')">✕</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+function salvarMeta(){
+  const cat=document.getElementById('meta-cat').value;
+  const val=parseFloat(document.getElementById('meta-val').value);
+  if(!val||val<=0){toast('Valor inválido','terr');return;}
+  if(!DB.metas[mesSel])DB.metas[mesSel]={};
+  DB.metas[mesSel][cat]=val;save();renderMetas();toast(`Meta de ${cat}: ${R(val)}`);
+  document.getElementById('meta-val').value='';
+}
+function atualizarMeta(cat){
+  const val=parseFloat(document.getElementById('mi-'+cat).value);
+  if(!val||val<=0){toast('Valor inválido','terr');return;}
+  if(!DB.metas[mesSel])DB.metas[mesSel]={};
+  DB.metas[mesSel][cat]=val;save();renderMetas();toast('Meta atualizada');
+}
+function removerMeta(cat){if(DB.metas[mesSel])delete DB.metas[mesSel][cat];save();renderMetas();toast('Meta removida');}
+
+// ════════════════════════════════
+//  PARCELAS
+// ════════════════════════════════
+function syncParcCats(){
+  const sel=document.getElementById('p-cat');
+  if(sel)sel.innerHTML=DB.cats.filter(c=>c.tipo==='GASTO').map(c=>`<option value="${c.nome}">${c.nome}</option>`).join('');
+}
+function calcParc(){
+  const total=parseFloat(document.getElementById('p-total').value)||0;
+  const qtd=parseInt(document.getElementById('p-qtd').value)||0;
+  if(total>0&&qtd>0)document.getElementById('p-val-parc').value=(total/qtd).toFixed(2);
+}
+function salvarParc(){
+  const desc=document.getElementById('p-desc').value.trim();
+  const cat=document.getElementById('p-cat').value;
+  const data=document.getElementById('p-data').value;
+  const total=parseFloat(document.getElementById('p-total').value);
+  const qtd=parseInt(document.getElementById('p-qtd').value);
+  const valParc=parseFloat(document.getElementById('p-val-parc').value);
+  const pagas=parseInt(document.getElementById('p-pagas').value)||0;
+  if(!desc){toast('Informe a descrição','terr');return;}
+  if(!data){toast('Informe a data','terr');return;}
+  if(!total||total<=0){toast('Valor inválido','terr');return;}
+  if(!qtd||qtd<=0){toast('Informe as parcelas','terr');return;}
+  if(!valParc||valParc<=0){toast('Calcule o valor da parcela','terr');return;}
+  if(!DB.parcelas)DB.parcelas=[];
+  DB.parcelas.push({id:Date.now(),desc,cat,data,total,valParc,qtd,pagas});
+  save();['p-desc','p-total','p-qtd','p-val-parc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('p-pagas').value='0';setHoje('p-data');
+  toast('Parcela salva!');syncParcCats();renderParcCards();renderParcelas();
+}
+function renderParcCards(){
+  if(!DB.parcelas)DB.parcelas=[];
+  const total=DB.parcelas.reduce((a,p)=>a+p.total,0);
+  const pago=DB.parcelas.reduce((a,p)=>a+p.valParc*p.pagas,0);
+  const ativas=DB.parcelas.filter(p=>p.pagas<p.qtd).length;
+  const quitadas=DB.parcelas.filter(p=>p.pagas>=p.qtd).length;
+  const faturaProx=DB.parcelas.filter(p=>p.pagas<p.qtd).reduce((a,p)=>a+p.valParc,0);
+  const h=new Date();let m=h.getMonth()+2,a=h.getFullYear();if(m>12){m=1;a++;}
+  const vctoStr=`10/${MESES[m-1]}/${a}`;
+  document.getElementById('parc-cards').innerHTML=`
+    <div class="card cb"><div class="cl">Total das Compras</div><div class="cv vb">${R(total)}</div><div class="cs">${DB.parcelas.length} compra(s)</div></div>
+    <div class="card cg"><div class="cl">Total Já Pago</div><div class="cv vg">${R(pago)}</div><div class="cs">${quitadas} quitada(s)</div></div>
+    <div class="card cr2"><div class="cl">Ainda Falta Pagar</div><div class="cv vr">${R(total-pago)}</div><div class="cs">${ativas} ativa(s)</div></div>
+    <div class="card cy"><div class="cl">💳 Próxima Fatura</div><div class="cv vo">${R(faturaProx)}</div><div class="cs">Vence ${vctoStr}</div></div>`;
+}
+function renderParcelas(){
+  if(!DB.parcelas)DB.parcelas=[];
+  const list=[...DB.parcelas].sort((a,b)=>b.data.localeCompare(a.data));
+  const tb=document.getElementById('parc-body');
+  if(!list.length){tb.innerHTML=`<tr><td colspan="12" class="empty">Nenhuma compra parcelada registrada.</td></tr>`;return;}
+  const h=new Date();let m=h.getMonth()+2,a=h.getFullYear();if(m>12){m=1;a++;}
+  const vctoStr=`10/${MESES[m-1]}/${a}`;
+  tb.innerHTML=list.map(p=>{
+    const restam=p.qtd-p.pagas;
+    const quitado=restam===0;
+    const pct=Math.round(p.pagas/p.qtd*100);
+    const cor=(DB.cats.find(c=>c.nome===p.cat)||{cor:'#8b949e'}).cor;
+    const idx=DB.parcelas.findIndex(x=>x.id===p.id);
+    return `<tr style="${quitado?'opacity:.6':''}">
+      <td style="font-weight:600">${p.desc} ${quitado?'<span class="tag win-badge" style="font-size:.65rem">✔ Quitado</span>':''}</td>
+      <td><span style="color:${cor};font-weight:600">${p.cat}</span></td>
+      <td>${p.data.split('-').reverse().join('/')}</td>
+      <td style="font-weight:700;color:var(--blue)">${R(p.total)}</td>
+      <td>${R(p.valParc)}</td>
+      <td style="text-align:center">${p.qtd}x</td>
+      <td style="text-align:center">
+        <div style="display:flex;align-items:center;gap:5px">
+          <span style="font-weight:700">${p.pagas}</span>
+          ${!quitado?`<button class="btn btn-s btn-sm" style="padding:2px 6px;font-size:.65rem" onclick="pagarParc(${idx})">+1</button>`:''}
+        </div>
+      </td>
+      <td style="text-align:center;color:${restam>0?'var(--red)':'var(--green)'}">${restam>0?restam+'x':'—'}</td>
+      <td style="color:var(--green);font-weight:600">${R(p.valParc*p.pagas)}</td>
+      <td style="color:${restam>0?'var(--red)':'var(--muted)'};font-weight:${restam>0?'700':'400'}">${restam>0?R(p.valParc*restam):'R$ 0,00'}</td>
+      <td style="font-size:.72rem;color:${quitado?'var(--muted)':'var(--orange)'}">${quitado?'—':vctoStr}</td>
+      <td><button class="btn btn-g btn-ico btn-sm" style="color:var(--red)" onclick="openDelParc(${idx})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+function pagarParc(idx){
+  const p=DB.parcelas[idx];if(!p)return;
+  if(p.pagas>=p.qtd){toast('Já quitado!','tinf');return;}
+  p.pagas++;
+  const hoje=new Date().toISOString().split('T')[0];
+  DB.lancamentos.push({id:Date.now(),data:hoje,tipo:'GASTO',cat:p.cat,sub:'Parcelas',
+    desc:`${p.desc} (${p.pagas}/${p.qtd})`,valor:p.valParc,pagto:'Crédito',
+    obs:'Via Parcelas',dia:DIAS[new Date(hoje+'T12:00:00').getDay()]});
+  save();renderParcCards();renderParcelas();
+  const restam=p.qtd-p.pagas;
+  toast(restam===0?`"${p.desc}" quitada!`:`Parcela ${p.pagas}/${p.qtd} paga. Faltam ${restam}.`);
+}
+function openDelParc(i){delParcIdx=i;document.getElementById('ov-del-parc').classList.add('open');}
+function confirmDelParc(){if(delParcIdx!==null){DB.parcelas.splice(delParcIdx,1);save();toast('Excluído');syncParcCats();renderParcCards();renderParcelas();}closeOv('ov-del-parc');delParcIdx=null;}
+
+// ════════════════════════════════
+//  TRADING
+// ════════════════════════════════
+function calcAutoTrade(){
+  const entry=parseFloat(document.getElementById('t-entry').value)||0;
+  const exit=parseFloat(document.getElementById('t-exit').value)||0;
+  const stop=parseFloat(document.getElementById('t-stop').value)||0;
+  const lots=parseInt(document.getElementById('t-lots').value)||1;
+  const dir=document.getElementById('t-dir').value;
+  document.getElementById('t-res').value=((dir==='LONG'?exit-entry:entry-exit)*10*lots).toFixed(2);
+  if(stop>0&&entry>0&&exit>0){
+    const reward=Math.abs(exit-entry);
+    const rr=(reward/stop).toFixed(2);
+    document.getElementById('t-rr-display').value=rr+'R';
+  } else {
+    document.getElementById('t-rr-display').value='—';
+  }
+}
+function salvarTrade(){
+  const data=document.getElementById('t-data').value;
+  if(!data){toast('Informe a data','terr');return;}
+  const res=parseFloat(document.getElementById('t-res').value)||0;
+  const stopPts=parseFloat(document.getElementById('t-stop').value)||0;
+  const rrDisp=document.getElementById('t-rr-display').value;
+  const rrVal=rrDisp&&rrDisp!=='—'?parseFloat(rrDisp):null;
+  DB.trades.push({id:Date.now(),data,
+    hora:document.getElementById('t-hora').value,
+    dir:document.getElementById('t-dir').value,
+    entry:parseFloat(document.getElementById('t-entry').value)||0,
+    exit:parseFloat(document.getElementById('t-exit').value)||0,
+    stopPts,
+    rr:rrVal,
+    lots:parseInt(document.getElementById('t-lots').value)||1,
+    setup:document.getElementById('t-setup').value,
+    gatilho:document.getElementById('t-gatilho').value,
+    emoc:document.getElementById('t-emoc').value,
+    resultado:res,
+    obs:document.getElementById('t-obs').value.trim()
+  });
+  save();['t-entry','t-exit','t-stop','t-res','t-obs'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('t-rr-display').value='';
+  document.getElementById('t-lots').value='1';
+  toast('Trade registrado!');renderTradeCards();renderTradeCharts();renderTrades();
+}
+function renderTradeCards(){
+  const t=getTradesFiltrados();
+  const pnl=t.reduce((a,x)=>a+x.resultado,0);
+  const wins=t.filter(x=>x.resultado>0).length;
+  const losses=t.filter(x=>x.resultado<0).length;
+  const be=t.filter(x=>x.resultado===0).length;
+  const wr=t.length>0?(wins/t.length*100).toFixed(1):0;
+  const avgWin=wins>0?(t.filter(x=>x.resultado>0).reduce((a,x)=>a+x.resultado,0)/wins):0;
+  const avgLoss=losses>0?(t.filter(x=>x.resultado<0).reduce((a,x)=>a+x.resultado,0)/losses):0;
+  const rr=avgLoss!==0?Math.abs(avgWin/avgLoss).toFixed(2):'—';
+  document.getElementById('trade-cards-trading').innerHTML=`
+    <div class="card ${pnl>=0?'cg':'cr2'}"><div class="cl">Resultado Total</div><div class="cv ${pnl>=0?'vg':'vr'}">${pnl>=0?'+':''}${R(pnl)}</div><div class="cs">${t.length} ops</div></div>
+    <div class="card cb"><div class="cl">Win Rate</div><div class="cv vb">${wr}%</div><div class="cs">${wins}W / ${losses}L${be>0?' / '+be+'BE':''}</div></div>
+    <div class="card cg"><div class="cl">Média Win</div><div class="cv vg">+${R(avgWin)}</div><div class="cs">Loss médio: ${R(avgLoss)}</div></div>
+    <div class="card cy"><div class="cl">Fator R:R</div><div class="cv vy">${rr}</div><div class="cs">Ideal: acima de 1.5</div></div>`;
+}
+function renderTradeCharts(){
+  const t=getTradesFiltrados().sort((a,b)=>a.data.localeCompare(b.data));
+  let acum=0;
+  const eqData=t.map(x=>{acum+=x.resultado;return acum;});
+  if(cEquityT)cEquityT.destroy();
+  const eqWrap=document.getElementById('c-equity-t-wrap');
+  if(!eqData.length){
+    if(eqWrap)eqWrap.innerHTML='<div style="height:200px;display:flex;align-items:center;justify-content:center;color:#8b949e;font-size:.85rem">Nenhuma operação registrada ainda</div>';
+  } else {
+    if(eqWrap)eqWrap.innerHTML='<canvas id="c-equity-t"></canvas>';
+    const eqc=document.getElementById('c-equity-t');
+    cEquityT=new Chart(eqc,{type:'line',
+      data:{labels:t.map((_,i)=>'Op '+(i+1)),datasets:[
+        {data:eqData,borderWidth:2,pointRadius:4,tension:.3,fill:true,borderColor:'#58a6ff',backgroundColor:'rgba(88,166,255,.07)',pointBackgroundColor:eqData.map(v=>v>=0?'#3fb950':'#f85149')},
+        {data:eqData.map(()=>0),borderColor:'rgba(255,255,255,.12)',borderDash:[5,5],borderWidth:1,pointRadius:0,fill:false}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{ticks:{color:'#8b949e',font:{size:10},maxTicksLimit:10},grid:{color:'rgba(255,255,255,.04)'}},
+                y:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.05)'}}}}});
+  }
+  // Setup
+  const sMap={};
+  t.forEach(x=>{if(!sMap[x.setup])sMap[x.setup]={w:0,l:0};if(x.resultado>0)sMap[x.setup].w++;else if(x.resultado<0)sMap[x.setup].l++;});
+  const sLbl=Object.keys(sMap);
+  const sWR=sLbl.map(s=>sMap[s].w+sMap[s].l>0?Math.round(sMap[s].w/(sMap[s].w+sMap[s].l)*100):0);
+  if(cSetup)cSetup.destroy();
+  const sWrap=document.getElementById('c-setup-wrap');
+  if(!sLbl.length){
+    if(sWrap)sWrap.innerHTML='<div style="height:180px;display:flex;align-items:center;justify-content:center;color:#8b949e;font-size:.85rem">Sem dados de setup ainda</div>';
+  } else {
+    if(sWrap)sWrap.innerHTML='<canvas id="c-setup"></canvas>';
+    const sc=document.getElementById('c-setup');
+    cSetup=new Chart(sc,{type:'bar',
+      data:{labels:sLbl,datasets:[{data:sWR,backgroundColor:sWR.map(v=>v>=50?'rgba(63,185,80,.75)':'rgba(248,81,73,.75)'),borderRadius:5,borderWidth:0}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{min:0,max:100,ticks:{color:'#8b949e',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.04)'}},
+                y:{ticks:{color:'#e6edf3',font:{size:10}},grid:{display:false}}}}});
+  }
+  // Gatilho
+  const gMap={},gCnt={};
+  t.forEach(x=>{const g=x.gatilho||'—';if(!gMap[g])gMap[g]=0;gMap[g]+=x.resultado;gCnt[g]=(gCnt[g]||0)+1;});
+  const gLbl=Object.keys(gMap);
+  if(cEmoc)cEmoc.destroy();
+  const gWrap=document.getElementById('c-emocao-wrap');
+  if(!gLbl.length){
+    if(gWrap)gWrap.innerHTML='<div style="height:160px;display:flex;align-items:center;justify-content:center;color:#8b949e;font-size:.85rem">Sem dados de gatilho ainda</div>';
+  } else {
+    if(gWrap)gWrap.innerHTML='<canvas id="c-emocao"></canvas>';
+    const gc=document.getElementById('c-emocao');
+    cEmoc=new Chart(gc,{type:'bar',
+      data:{labels:gLbl,datasets:[{data:gLbl.map(g=>gMap[g]),backgroundColor:gLbl.map(g=>gMap[g]>=0?'rgba(63,185,80,.75)':'rgba(248,81,73,.75)'),borderRadius:5,borderWidth:0}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const g=gLbl[ctx.dataIndex];return` R$ ${gMap[g].toFixed(2)} — ${gCnt[g]} ops`;}}}},
+        scales:{x:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.04)'}},
+                y:{ticks:{color:'#e6edf3',font:{size:10}},grid:{display:false}}}}})
+  }
+
+  // Resultado por estado emocional
+  const eMap={},eCnt={};
+  t.forEach(x=>{const e=x.emocao||'—';if(!eMap[e])eMap[e]=0;eMap[e]+=x.resultado;eCnt[e]=(eCnt[e]||0)+1;});
+  const eLbl=Object.keys(eMap);
+  if(cEmocT)cEmocT.destroy();
+  const eTWrap=document.getElementById('c-emoc-t-wrap');
+  if(!eLbl.length){
+    if(eTWrap)eTWrap.innerHTML='<div style="height:160px;display:flex;align-items:center;justify-content:center;color:#8b949e;font-size:.85rem">Sem dados de emoção ainda</div>';
+  } else {
+    if(eTWrap)eTWrap.innerHTML='<canvas id="c-emoc-t"></canvas>';
+    const ec=document.getElementById('c-emoc-t');
+    cEmocT=new Chart(ec,{type:'bar',
+      data:{labels:eLbl,datasets:[{data:eLbl.map(e=>eMap[e]),backgroundColor:eLbl.map(e=>eMap[e]>=0?'rgba(63,185,80,.75)':'rgba(248,81,73,.75)'),borderRadius:5,borderWidth:0}]},
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const e=eLbl[ctx.dataIndex];return` R$ ${eMap[e].toFixed(2)} — ${eCnt[e]} ops`;
+        }}}},
+        scales:{x:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.04)'}},
+                y:{ticks:{color:'#e6edf3',font:{size:10}},grid:{display:false}}}}});
+  }
+}
+function renderTrades(){
+  const t=getTradesFiltrados().sort((a,b)=>b.data.localeCompare(a.data));
+  const tb=document.getElementById('t-body');
+  if(!t.length){tb.innerHTML=`<tr><td colspan="12" class="empty">Nenhuma operação registrada.</td></tr>`;return;}
+  tb.innerHTML=t.map(x=>{
+    const cor=x.resultado>0?'var(--green)':x.resultado<0?'var(--red)':'var(--blue)';
+    const resBadge=x.resultado>0?'win-badge':x.resultado<0?'loss-badge':'be-badge';
+    const idx=DB.trades.findIndex(y=>y.id===x.id);
+    return `<tr>
+      <td>${x.data.split('-').reverse().join('/')}</td>
+      <td style="color:var(--muted)">${x.hora||'—'}</td>
+      <td><span class="trd-badge ${x.dir==='LONG'?'long':'short'}">${x.dir==='LONG'?'↑ LONG':'↓ SHORT'}</span></td>
+      <td style="font-size:.75rem">${x.entry||'—'}</td>
+      <td style="font-size:.75rem">${x.exit||'—'}</td>
+      <td style="text-align:center">${x.lots}</td>
+      <td style="color:var(--blue);font-size:.75rem">${x.setup}</td>
+      <td style="color:var(--purple);font-size:.75rem">${x.gatilho||'—'}</td>
+      <td style="color:var(--muted);font-size:.75rem">${x.emoc}</td>
+      <td><span class="tag ${resBadge}">${x.resultado>=0?'+':''}${R(x.resultado)}</span></td>
+      <td style="color:var(--faint);font-size:.72rem">${x.obs||''}</td>
+      <td><button class="btn btn-g btn-ico btn-sm" style="color:var(--red)" onclick="openDelTrade(${idx})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+function openDelTrade(i){delTradeIdx=i;document.getElementById('ov-del-trade').classList.add('open');}
+function confirmDelTrade(){if(delTradeIdx!==null){DB.trades.splice(delTradeIdx,1);save();toast('Excluído');renderTradeCards();renderTradeCharts();renderTrades();}closeOv('ov-del-trade');delTradeIdx=null;}
+
+// ════════════════════════════════
+//  CATEGORIAS
+// ════════════════════════════════
+function renderCats(){
+  document.getElementById('cdots').innerHTML=CORES.map(c=>`<div class="cdot${c===corSel?' sel':''}" style="background:${c}" onclick="selCor('${c}')"></div>`).join('');
+  document.getElementById('cats-render').innerHTML=DB.cats.map((cat,ci)=>`
+    <div class="cb2">
+      <div class="cb2-h">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:9px;height:9px;border-radius:50%;background:${cat.cor};flex-shrink:0"></div>
+          <div>
+            <div style="font-size:.83rem;font-weight:600">${cat.nome}</div>
+            <div style="font-size:.65rem;color:var(--muted)">${cat.tipo==='GASTO'?'💸 Gasto':'💰 Ganho'}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;align-items:center">
+          <span style="font-size:.65rem;color:var(--muted);background:var(--bg3);padding:2px 7px;border-radius:8px">${cat.subs.length} sub</span>
+          <button class="btn btn-g btn-ico btn-sm" onclick="abrirEditCat(${ci})">✏️</button>
+          <button class="btn btn-g btn-ico btn-sm" style="color:var(--red)" onclick="abrirDelCat(${ci})">✕</button>
+        </div>
+      </div>
+      <div class="cb2-b">
+        ${cat.subs.map((s,si)=>`
+          <div class="sub-item">
+            <span style="font-size:.78rem" id="sn-${ci}-${si}">${s}</span>
+            <div class="sa">
+              <button class="btn btn-g btn-ico btn-sm" onclick="editSub(${ci},${si})">✏️</button>
+              <button class="btn btn-g btn-ico btn-sm" style="color:var(--red)" onclick="delSub(${ci},${si})">✕</button>
+            </div>
+          </div>`).join('')}
+        <div class="add-sub">
+          <input type="text" id="asub-${ci}" placeholder="Nova subcategoria..." maxlength="40" onkeydown="if(event.key==='Enter')addSub(${ci})">
+          <button class="btn btn-s btn-sm" onclick="addSub(${ci})">+ Add</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function selCor(c){corSel=c;document.querySelectorAll('.cdot').forEach(d=>d.classList.toggle('sel',d.style.background===c||d.style.backgroundColor===c));}
+function addCat(){
+  const nome=document.getElementById('nc-nome').value.trim().toUpperCase();
+  const tipo=document.getElementById('nc-tipo').value;
+  if(!nome){toast('Informe o nome','terr');return;}
+  if(DB.cats.find(c=>c.nome===nome)){toast('Já existe','terr');return;}
+  DB.cats.push({nome,tipo,cor:corSel,subs:['Outro']});
+  save();document.getElementById('nc-nome').value='';renderCats();syncCats();toast('Categoria criada!');
+}
+function abrirEditCat(i){editCatIdx=i;document.getElementById('ov-cat-input').value=DB.cats[i].nome;document.getElementById('ov-edit-cat').classList.add('open');}
+function confirmEditCat(){
+  const novo=document.getElementById('ov-cat-input').value.trim().toUpperCase();
+  if(!novo){toast('Informe o nome','terr');return;}
+  const old=DB.cats[editCatIdx].nome;
+  DB.cats[editCatIdx].nome=novo;
+  DB.lancamentos.forEach(l=>{if(l.cat===old)l.cat=novo;});
+  save();renderCats();syncCats();toast('Atualizado');closeOv('ov-edit-cat');
+}
+function abrirDelCat(i){delCatIdx=i;document.getElementById('ov-del-cat').classList.add('open');}
+function confirmDelCat(){if(delCatIdx!==null){DB.cats.splice(delCatIdx,1);save();renderCats();syncCats();toast('Removida');}closeOv('ov-del-cat');delCatIdx=null;}
+function addSub(ci){
+  const inp=document.getElementById(`asub-${ci}`);
+  const nome=inp.value.trim();if(!nome)return;
+  if(DB.cats[ci].subs.includes(nome)){toast('Já existe','terr');return;}
+  DB.cats[ci].subs.push(nome);save();inp.value='';renderCats();toast('Adicionada!');
+}
+function editSub(ci,si){
+  const el=document.getElementById(`sn-${ci}-${si}`);
+  const old=el.textContent;
+  el.innerHTML=`<input type="text" value="${old}" style="padding:3px 7px;background:var(--bg);border:1px solid var(--blue);border-radius:4px;color:var(--text);font-size:.77rem;width:140px;outline:none" onblur="saveSub(${ci},${si},this)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){this.value='${old}';this.blur();}">`;
+  el.querySelector('input').focus();
+}
+function saveSub(ci,si,inp){
+  const val=inp.value.trim();if(val&&val!==DB.cats[ci].subs[si]){DB.cats[ci].subs[si]=val;save();toast('Editado');}
+  renderCats();
+}
+function delSub(ci,si){
+  if(DB.cats[ci].subs.length<=1){toast('Mínimo 1 subcategoria','terr');return;}
+  DB.cats[ci].subs.splice(si,1);save();renderCats();toast('Removida');
+}
+
+// ════════════════════════════════
+//  EXPORTAR
+// ════════════════════════════════
+function baixar(c,n,t){const b=new Blob([c],{type:t});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.click();URL.revokeObjectURL(a.href);}
+function exportCSV(){
+  const hdr='DATA,DIA,TIPO,CATEGORIA,SUBCATEGORIA,DESCRIÇÃO,VALOR,PAGO COM,OBSERVAÇÃO\n';
+  const rows=[...DB.lancamentos].sort((a,b)=>a.data.localeCompare(b.data)).map(l=>[l.data,l.dia||'',l.tipo,l.cat,l.sub||'',`"${(l.desc||'').replace(/"/g,'""')}"`,l.valor.toFixed(2),l.pagto,`"${(l.obs||'').replace(/"/g,'""')}"`].join(',')).join('\n');
+  baixar('\uFEFF'+hdr+rows,`Finance-Lancamentos-${new Date().toISOString().slice(0,10)}.csv`,'text/csv;charset=utf-8;');
+  toast('CSV exportado!','tinf');
+}
+function exportTradeCSV(){
+  const hdr='DATA,HORA,DIREÇÃO,ENTRADA,SAÍDA,LOTES,SETUP,GATILHO,EMOÇÃO,RESULTADO,OBSERVAÇÃO\n';
+  const rows=[...DB.trades].sort((a,b)=>a.data.localeCompare(b.data)).map(t=>[t.data,t.hora||'',t.dir,t.entry||'',t.exit||'',t.lots,t.setup,t.gatilho||'',t.emoc,t.resultado.toFixed(2),`"${(t.obs||'').replace(/"/g,'""')}"`].join(',')).join('\n');
+  baixar('\uFEFF'+hdr+rows,`Finance-Trades-${new Date().toISOString().slice(0,10)}.csv`,'text/csv;charset=utf-8;');
+  toast('CSV de trades exportado!','tinf');
+}
+function exportParcCSV(){
+  if(!DB.parcelas||!DB.parcelas.length){toast('Nenhuma parcela','terr');return;}
+  const hdr='DESCRIÇÃO,CATEGORIA,DATA,VALOR TOTAL,VALOR PARCELA,TOTAL PARCELAS,PAGAS,RESTAM\n';
+  const rows=DB.parcelas.map(p=>[`"${p.desc}"`,p.cat,p.data,p.total.toFixed(2),p.valParc.toFixed(2),p.qtd,p.pagas,p.qtd-p.pagas].join(',')).join('\n');
+  baixar('\uFEFF'+hdr+rows,`Finance-Parcelas-${new Date().toISOString().slice(0,10)}.csv`,'text/csv;charset=utf-8;');
+  toast('CSV de parcelas exportado!','tinf');
+}
+function backupJSON(){baixar(JSON.stringify(DB,null,2),`Finance-Backup-${new Date().toISOString().slice(0,10)}.json`,'application/json');toast('Backup salvo!','tinf');}
+function restoreJSON(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{try{DB=JSON.parse(e.target.result);garantirCamposDB();save();renderDash();toast('Restaurado!');go('dash');}catch{toast('Arquivo inválido','terr');}};
+  r.readAsText(f);
+}
+
+// ════════════════════════════════
+//  INICIALIZAR
+// ════════════════════════════════
+function garantirCamposDB(){
+  if(!DB.lancamentos)DB.lancamentos=[];
+  if(!DB.trades)DB.trades=[];
+  if(!DB.parcelas)DB.parcelas=[];
+  if(!DB.cats)DB.cats=[];
+  if(!DB.metas)DB.metas={};
+  if(!DB.opsEstudo)DB.opsEstudo=[];
+  if(!DB.estudos)DB.estudos=[];
+  if(!DB.semanas12)DB.semanas12={startDate:null,visao:'',metas:[],semanas:[],ideias:[]};
+  if(!DB.semanas12.visao)DB.semanas12.visao='';
+  if(!DB.semanas12.metas)DB.semanas12.metas=[];
+  if(!DB.semanas12.semanas)DB.semanas12.semanas=[];
+  if(!DB.semanas12.ideias)DB.semanas12.ideias=[];
+  DB.semanas12.startDate='2026-04-01';
+  // Garantir categorias default
+  DB_DEFAULT.cats.forEach(dc=>{
+    if(!DB.cats.find(c=>c.nome===dc.nome&&c.tipo===dc.tipo))DB.cats.push(dc);
+  });
+}
+
+function initApp(){
+  garantirCamposDB();
+  setHoje('f-data');setHoje('t-data');setHoje('p-data');
+  setHoje('eo-data');setHoje('es-data');
+  const mesAtual=new Date().toISOString().slice(0,7);
+  const trData=document.getElementById('tr-data');
+  if(trData)trData.value=mesAtual;
+  syncEstudoSelects();
+  initMeses();
+  syncCats();
+  renderDash();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  // Firebase cuida do login antes de chamar initApp()
+});
+
+// ════════════════════════════════
+//  ESTUDO & REPLAY
+// ════════════════════════════════
+let cEstSetup=null,cEstGatilho=null,cEstEquity=null;
+
+function syncEstudoSelects(){
+  const setup=document.getElementById('eo-setup');
+  const gatilho=document.getElementById('eo-gatilho');
+  if(setup){setup.innerHTML=SETUPS_ESTUDO.map(s=>`<option>${s}</option>`).join('');}
+  if(gatilho){gatilho.innerHTML=GATS_ESTUDO.map(g=>`<option>${g}</option>`).join('');}
+}
+
+function showEstTab(tab){
+  document.querySelectorAll('#panel-estudo .tab').forEach((t,i)=>{t.classList.toggle('on',i===(tab==='ops'?0:1));});
+  document.getElementById('est-tab-ops').classList.toggle('on',tab==='ops');
+  document.getElementById('est-tab-sess').classList.toggle('on',tab==='sess');
+}
+
+function addOpEstudo(){
+  const data=document.getElementById('eo-data').value;
+  const hora=document.getElementById('eo-hora').value;
+  const tipo=document.getElementById('eo-tipo').value;
+  const dir=document.getElementById('eo-dir').value;
+  const setup=document.getElementById('eo-setup').value;
+  const gatilho=document.getElementById('eo-gatilho').value;
+  const res=parseFloat(document.getElementById('eo-res').value)||0;
+  const obs=document.getElementById('eo-obs').value.trim();
+  if(!data){toast('Informe a data','terr');return;}
+  DB.opsEstudo.push({id:Date.now(),data,hora,tipo,dir,setup,gatilho,resultado:res,obs});
+  save();
+  document.getElementById('eo-res').value='';
+  document.getElementById('eo-obs').value='';
+  renderOpEstudo();
+  toast('Operação registrada!');
+}
+
+function deleteOpEstudo(idx){
+  if(!confirm('Excluir operação?'))return;
+  DB.opsEstudo.splice(idx,1);
+  save();renderOpEstudo();
+}
+
+function renderOpEstudo(){
+  const tbody=document.getElementById('eo-body');
+  if(!tbody)return;
+  const ops=[...DB.opsEstudo].sort((a,b)=>b.data.localeCompare(a.data)||(b.hora||'').localeCompare(a.hora||''));
+  if(!ops.length){tbody.innerHTML=`<tr><td colspan="9" class="empty">Nenhuma operação registrada</td></tr>`;return;}
+  tbody.innerHTML=ops.map((op,i)=>{
+    const ri=DB.opsEstudo.indexOf(op);
+    const cls=op.resultado>0?'vg':op.resultado<0?'vr':'';
+    return`<tr>
+      <td>${op.data}</td>
+      <td>${op.hora||'—'}</td>
+      <td><span class="tag be-badge">${op.tipo}</span></td>
+      <td><span class="trd-badge ${op.dir==='LONG'?'long':'short'}">${op.dir}</span></td>
+      <td>${op.setup}</td>
+      <td>${op.gatilho||'—'}</td>
+      <td class="${cls}">${op.resultado>=0?'+':''}${R(op.resultado)}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${op.obs||'—'}</td>
+      <td><button class="btn btn-r btn-sm btn-ico" onclick="deleteOpEstudo(${ri})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function addSessaoEstudo(){
+  const data=document.getElementById('es-data').value;
+  const tipo=document.getElementById('es-tipo').value;
+  const min=parseInt(document.getElementById('es-min').value)||0;
+  const setups=document.getElementById('es-setups').value.trim();
+  const obs=document.getElementById('es-obs').value.trim();
+  if(!data){toast('Informe a data','terr');return;}
+  DB.estudos.push({id:Date.now(),data,tipo,min,setups,obs});
+  save();
+  document.getElementById('es-min').value='';
+  document.getElementById('es-setups').value='';
+  document.getElementById('es-obs').value='';
+  renderSessaoEstudo();
+  toast('Sessão registrada!');
+}
+
+function deleteSessaoEstudo(idx){
+  if(!confirm('Excluir sessão?'))return;
+  DB.estudos.splice(idx,1);
+  save();renderSessaoEstudo();
+}
+
+function renderSessaoEstudo(){
+  const tbody=document.getElementById('es-body');
+  if(!tbody)return;
+  const sess=[...DB.estudos].sort((a,b)=>b.data.localeCompare(a.data));
+  if(!sess.length){tbody.innerHTML=`<tr><td colspan="6" class="empty">Nenhuma sessão registrada</td></tr>`;return;}
+  tbody.innerHTML=sess.map((s)=>{
+    const ri=DB.estudos.indexOf(s);
+    const dur=s.min>=60?`${Math.floor(s.min/60)}h${s.min%60?s.min%60+'m':''}`:`${s.min}min`;
+    return`<tr>
+      <td>${s.data}</td>
+      <td><span class="tag be-badge">${s.tipo}</span></td>
+      <td>${dur}</td>
+      <td>${s.setups||'—'}</td>
+      <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${s.obs||'—'}</td>
+      <td><button class="btn btn-r btn-sm btn-ico" onclick="deleteSessaoEstudo(${ri})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderAnaliseEstudo(){
+  const ops=DB.opsEstudo||[];
+  const sess=DB.estudos||[];
+  const totalOps=ops.length;
+  const wins=ops.filter(o=>o.resultado>0).length;
+  const wr=totalOps>0?(wins/totalOps*100).toFixed(1):0;
+  const pnl=ops.reduce((a,o)=>a+o.resultado,0);
+  const totalMin=sess.reduce((a,s)=>a+s.min,0);
+  const totalH=totalMin>=60?`${Math.floor(totalMin/60)}h${totalMin%60?totalMin%60+'m':''}`:`${totalMin}min`;
+
+  document.getElementById('aest-cards').innerHTML=`
+    <div class="card ${pnl>=0?'cg':'cr2'}"><div class="cl">P&L Estudo</div><div class="cv ${pnl>=0?'vg':'vr'}">${pnl>=0?'+':''}${R(pnl)}</div><div class="cs">${totalOps} ops</div></div>
+    <div class="card cb"><div class="cl">Win Rate</div><div class="cv vb">${wr}%</div><div class="cs">${wins}W / ${totalOps-wins}L</div></div>
+    <div class="card cy"><div class="cl">Horas de Estudo</div><div class="cv vy">${totalH}</div><div class="cs">${sess.length} sessões</div></div>
+    <div class="card cp"><div class="cl">Sess. por Setup</div><div class="cv vp">${SETUPS_ESTUDO.length}</div><div class="cs">setups mapeados</div></div>`;
+
+  // Chart: win rate por setup
+  const setupData=SETUPS_ESTUDO.map(s=>{
+    const sOps=ops.filter(o=>o.setup===s);
+    return sOps.length>0?(sOps.filter(o=>o.resultado>0).length/sOps.length*100):0;
+  });
+  if(cEstSetup)cEstSetup.destroy();
+  cEstSetup=mkBar('c-est-setup','c-est-setup-wrap',SETUPS_ESTUDO,[{label:'Win Rate %',data:setupData,backgroundColor:'rgba(88,166,255,.6)',borderRadius:4}],200);
+
+  // Chart: resultado por gatilho
+  const gatData=GATS_ESTUDO.map(g=>ops.filter(o=>o.gatilho===g).reduce((a,o)=>a+o.resultado,0));
+  if(cEstGatilho)cEstGatilho.destroy();
+  cEstGatilho=mkBar('c-est-gatilho','c-est-gatilho-wrap',GATS_ESTUDO,[{label:'Resultado R$',data:gatData,backgroundColor:gatData.map(v=>v>=0?'rgba(63,185,80,.6)':'rgba(248,81,73,.6)'),borderRadius:4}],200);
+
+  // Equity curve
+  const sorted=[...ops].sort((a,b)=>a.data.localeCompare(b.data));
+  let acum=0;
+  const eqData=sorted.map(o=>{acum+=o.resultado;return acum;});
+  const wrap=document.getElementById('c-est-equity-wrap');
+  if(cEstEquity)cEstEquity.destroy();
+  if(!eqData.length){if(wrap)wrap.innerHTML='<div style="height:180px;display:flex;align-items:center;justify-content:center;color:#8b949e;font-size:.85rem">Nenhuma operação registrada</div>';}
+  else{
+    if(wrap)wrap.innerHTML='<canvas id="c-est-equity"></canvas>';
+    const cv=document.getElementById('c-est-equity');
+    cEstEquity=new Chart(cv,{type:'line',
+      data:{labels:sorted.map((_,i)=>'Op '+(i+1)),datasets:[{data:eqData,borderWidth:2,pointRadius:3,tension:.3,fill:true,
+        borderColor:'#bc8cff',backgroundColor:'rgba(188,140,255,.07)',
+        pointBackgroundColor:eqData.map(v=>v>=0?'#3fb950':'#f85149')}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{ticks:{color:'#8b949e',font:{size:10},maxTicksLimit:8},grid:{color:'rgba(255,255,255,.04)'}},
+                y:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.05)'}}}}});
+  }
+
+  // Tabela
+  const tbody=document.getElementById('aest-body');
+  if(tbody){
+    const s=[...ops].sort((a,b)=>b.data.localeCompare(a.data));
+    if(!s.length){tbody.innerHTML=`<tr><td colspan="7" class="empty">Nenhuma operação</td></tr>`;}
+    else{tbody.innerHTML=s.map(op=>{
+      const cls=op.resultado>0?'vg':op.resultado<0?'vr':'';
+      return`<tr>
+        <td>${op.data}</td>
+        <td><span class="tag be-badge">${op.tipo}</span></td>
+        <td><span class="trd-badge ${op.dir==='LONG'?'long':'short'}">${op.dir}</span></td>
+        <td>${op.setup}</td>
+        <td>${op.gatilho||'—'}</td>
+        <td class="${cls}">${op.resultado>=0?'+':''}${R(op.resultado)}</td>
+        <td>${op.obs||'—'}</td>
+      </tr>`}).join('');}
+  }
+}
+
+// ════════════════════════════════
+//  12 SEMANAS — "1 Ano em 12 Semanas" (Brian Moran)
+//  Foco: rotina de vida, hábitos diários, score de execução ≥85%
+// ════════════════════════════════
+let cS12=null,cS12Fin=null;
+
+// ────────────────────────────────
+//  Navegação de abas
+// ────────────────────────────────
+function show12Tab(tab){
+  const order=['semana','progresso','metas'];
+  document.querySelectorAll('#panel-semanas12 .tab').forEach((t,i)=>t.classList.toggle('on',order[i]===tab));
+  order.forEach(id=>{const el=document.getElementById('s12-tab-'+id);if(el)el.classList.toggle('on',id===tab);});
+  if(tab==='semana')renderS12SemanaAtual();
+  if(tab==='metas')renderS12Metas();
+  if(tab==='progresso')renderS12Progresso();
+}
+
+// ────────────────────────────────
+//  Helpers
+// ────────────────────────────────
+function s12GetDatas(idx){
+  if(!DB.semanas12.startDate)return'';
+  const start=new Date(DB.semanas12.startDate+'T12:00:00');
+  const ini=new Date(start);ini.setDate(start.getDate()+idx*7);
+  const fim=new Date(ini);fim.setDate(ini.getDate()+6);
+  const f=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+  return`${f(ini)} – ${f(fim)}`;
+}
+
+function getSemanaAtual(){
+  if(!DB.semanas12.startDate)return 0;
+  const start=new Date(DB.semanas12.startDate+'T12:00:00');
+  const diff=Math.floor((new Date()-start)/(7*24*60*60*1000));
+  return Math.max(0,Math.min(11,diff));
+}
+
+// Retorna PnL de trading da semana semIdx (0-based) do ciclo de 12 semanas
+function s12GetTradePnL(semIdx){
+  if(!DB.semanas12.startDate)return 0;
+  const start=new Date(DB.semanas12.startDate+'T12:00:00');
+  const segD=new Date(start);segD.setDate(start.getDate()+semIdx*7);
+  const sexD=new Date(segD);sexD.setDate(segD.getDate()+6);
+  const seg=segD.toISOString().split('T')[0];
+  const sex=sexD.toISOString().split('T')[0];
+  return DB.trades.filter(t=>t.data>=seg&&t.data<=sex).reduce((a,x)=>a+x.resultado,0);
+}
+
+function s12GetSemObj(idx){
+  while(DB.semanas12.semanas.length<=idx)
+    DB.semanas12.semanas.push({num:DB.semanas12.semanas.length+1,execucoes:{},score:null,notas:''});
+  if(!DB.semanas12.semanas[idx].execucoes)DB.semanas12.semanas[idx].execucoes={};
+  return DB.semanas12.semanas[idx];
+}
+
+// Score = sum(min(feito, planejado)) / sum(planejado) × 100
+function s12CalcScore(semObj){
+  const taticas=(DB.semanas12.metas||[]).flatMap(m=>m.taticas||[]);
+  if(!taticas.length)return null;
+  let planejadoTotal=0,feitoTotal=0;
+  taticas.forEach(t=>{
+    const freq=t.freq||1;
+    const feito=Math.min(parseInt(semObj.execucoes[t.id])||0, freq);
+    planejadoTotal+=freq;
+    feitoTotal+=feito;
+  });
+  if(!planejadoTotal)return null;
+  return Math.round(feitoTotal/planejadoTotal*100);
+}
+
+function s12ScoreCor(sc){
+  return sc===null?'var(--faint)':sc>=85?'var(--green)':sc>=60?'var(--yellow)':'var(--red)';
+}
+function s12ScoreLabel(sc){
+  if(sc===null)return'—';
+  if(sc>=85)return'No caminho certo! 🔥';
+  if(sc>=60)return'Atenção — acelere a execução ⚡';
+  return'Abaixo do esperado — revise o plano ⚠️';
+}
+
+// ────────────────────────────────
+//  ABA: SEMANA ATUAL
+// ────────────────────────────────
+function s12InitDefaultHabits(){
+  if(!DB.semanas12.metas)DB.semanas12.metas=[];
+  if(DB.semanas12.metas.length>0)return; // já tem hábitos configurados
+  // Auto-popula grupos padrão baseados na rotina do Joesmar
+  const ts=Date.now();
+  DB.semanas12.metas=[
+    {id:ts+1,texto:'Saúde & Bem-estar',taticas:[
+      {id:'h1',texto:'Meditação',freq:7},
+      {id:'h2',texto:'Banho gelado',freq:7},
+      {id:'h3',texto:'Academia',freq:5},
+      {id:'h4',texto:'Alimentação saudável',freq:7},
+      {id:'h5',texto:'Família',freq:7}
+    ]},
+    {id:ts+2,texto:'Trading & Mercado',taticas:[
+      {id:'h6',texto:'Pré-mercado',freq:5},
+      {id:'h7',texto:'Mercado a vista',freq:5},
+      {id:'h8',texto:'Seguiu o plano',freq:5},
+      {id:'h9',texto:'Diário de trading',freq:5}
+    ]},
+    {id:ts+3,texto:'Estudo & Crescimento',taticas:[
+      {id:'h10',texto:'Replay',freq:5},
+      {id:'h11',texto:'Estudo de IA',freq:5},
+      {id:'h12',texto:'Leitura',freq:7},
+      {id:'h13',texto:'Inglês',freq:5}
+    ]}
+  ];
+  save();
+}
+
+function renderSemanas12(){
+  s12InitDefaultHabits();
+  s12SemAtual=getSemanaAtual();
+  renderS12SemanaAtual();
+}
+
+function irS12Semana(idx){
+  s12SemAtual=idx;
+  renderS12SemanaAtual();
+}
+
+function renderS12SemanaAtual(){
+  const idx=s12SemAtual;
+  const sem=s12GetSemObj(idx);
+  const pct=Math.round(((idx+1)/12)*100);
+  const score=s12CalcScore(sem);
+  const cor=s12ScoreCor(score);
+
+  // Header ciclo
+  const header=document.getElementById('s12-sem-header');
+  if(header){
+    const curIdx=getSemanaAtual();
+    header.innerHTML=`
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 16px">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:10px">
+          <div>
+            <div style="font-size:1.1rem;font-weight:700;color:var(--blue)">Semana ${idx+1} <span style="color:var(--muted);font-size:.8rem;font-weight:400">de 12</span>${idx!==curIdx?'<span style="font-size:.6rem;color:var(--faint);margin-left:6px">(histórico)</span>':''}</div>
+            <div style="font-size:.72rem;color:var(--muted)">${s12GetDatas(idx)} · Ciclo desde ${DB.semanas12.startDate||'—'}</div>
+          </div>
+          <div style="flex:1;min-width:160px">
+            <div class="pbar-bg" style="height:7px"><div class="pbar" style="width:${pct}%;background:var(--blue)"></div></div>
+            <div style="font-size:.68rem;color:var(--muted);margin-top:3px">${pct}% do ciclo</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${Array.from({length:12},(_,i)=>{
+            const isSel=i===idx;const isCur=i===curIdx;
+            const sc=(DB.semanas12.semanas[i]||{}).score;
+            const bg=isSel?'var(--accent)':'transparent';
+            const col=isSel?'#fff':isCur?'var(--yellow)':sc!==null?'var(--green)':'var(--muted)';
+            const brd=isSel?'var(--accent)':isCur?'var(--yellow)':sc!==null?'rgba(63,185,80,.4)':'var(--border)';
+            return`<button onclick="irS12Semana(${i})" title="${s12GetDatas(i)}" style="padding:2px 9px;border-radius:20px;border:1px solid ${brd};font-size:.68rem;font-weight:700;cursor:pointer;background:${bg};color:${col};font-family:inherit;transition:all .15s">S${i+1}</button>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
+  // Score box
+  const scoreBox=document.getElementById('s12-score-box');
+  const taticas=(DB.semanas12.metas||[]).flatMap(m=>m.taticas||[]);
+  if(scoreBox){
+    if(!taticas.length){
+      scoreBox.innerHTML=`<div class="insight warn"><span class="ins-ico">⚠️</span><div><div class="ins-t">Configure suas metas e hábitos primeiro</div><div class="ins-b">Vá na aba "Metas" → adicione metas e táticas diárias (ex: Academia 5x/sem, Pré-mercado 5x/sem).</div></div></div>`;
+    }else{
+      scoreBox.innerHTML=`
+        <div style="background:var(--bg2);border:2px solid ${cor};border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <div style="text-align:center;min-width:60px">
+            <div id="s12-score-num" style="font-size:2.2rem;font-weight:800;color:${cor};line-height:1">${score!==null?score+'%':'—'}</div>
+            <div style="font-size:.65rem;color:var(--muted);margin-top:2px">execução</div>
+          </div>
+          <div style="flex:1;min-width:120px">
+            <div id="s12-score-lbl" style="font-size:.83rem;font-weight:600;color:${cor};margin-bottom:5px">${s12ScoreLabel(score)}</div>
+            <div class="pbar-bg" style="height:8px"><div id="s12-score-bar" class="pbar" style="width:${score||0}%;background:${cor}"></div></div>
+            <div style="font-size:.65rem;color:var(--muted);margin-top:3px">Meta semanal: 85%+</div>
+          </div>
+        </div>`;
+    }
+  }
+
+  // Scorecard — cada tática com input numérico
+  const sc=document.getElementById('s12-scorecard');
+  if(sc){
+    if(!taticas.length){sc.innerHTML='';return;}
+    const metas=DB.semanas12.metas||[];
+    sc.innerHTML='<div class="sec-title">Scorecard da Semana</div>'+
+    metas.map((m,mi)=>{
+      const rows=(m.taticas||[]).map(t=>{
+        const freq=t.freq||1;
+        const val=sem.execucoes[t.id]!==undefined?sem.execucoes[t.id]:0;
+        const pct2=Math.min(100,Math.round(val/freq*100));
+        const c2=pct2>=100?'var(--green)':pct2>=60?'var(--yellow)':'var(--red)';
+        return`<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:6px;border:1px solid var(--border);margin-bottom:5px;background:var(--bg3)">
+          <span style="flex:1;font-size:.83rem">${t.texto}</span>
+          <span style="font-size:.72rem;color:var(--muted);white-space:nowrap">meta: ${freq}×</span>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button class="btn btn-g btn-sm btn-ico" onclick="s12StepTat('${t.id}',${freq},-1)" style="padding:2px 8px;font-size:1rem">−</button>
+            <span id="s12-val-${t.id}" style="font-size:1rem;font-weight:700;color:${c2};min-width:28px;text-align:center">${val}</span>
+            <button class="btn btn-g btn-sm btn-ico" onclick="s12StepTat('${t.id}',${freq},1)" style="padding:2px 8px;font-size:1rem">+</button>
+          </div>
+          <span style="font-size:.7rem;color:${c2};min-width:32px;text-align:right">${pct2}%</span>
+        </div>`;
+      }).join('');
+      return`<div style="margin-bottom:14px">
+        <div style="font-size:.72rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Meta: ${m.texto}</div>
+        ${rows||'<div style="font-size:.75rem;color:var(--faint)">Sem táticas cadastradas</div>'}
+      </div>`;
+    }).join('');
+  }
+
+  const no=document.getElementById('s12-notas');
+  if(no)no.value=sem.notas||'';
+  const mel=document.getElementById('s12-melhorar');
+  if(mel)mel.value=sem.melhorar||'';
+  const nt=sem.notas_avaliacao||{};
+  ['trading','saude','estudo','vida'].forEach(k=>{
+    const el=document.getElementById('s12-nota-'+k);
+    if(el)el.value=nt[k]!=null?nt[k]:'';
+  });
+  // atualizar média
+  s12AtualizaMedia();
+}
+
+function s12AtualizaMedia(){
+  const vals=['trading','saude','estudo','vida'].map(k=>{
+    const v=parseFloat(document.getElementById('s12-nota-'+k)?.value);
+    return isNaN(v)?null:Math.max(0,Math.min(10,v));
+  }).filter(v=>v!==null);
+  const med=document.getElementById('s12-nota-media');
+  if(!med)return;
+  if(!vals.length){med.textContent='';return;}
+  const avg=(vals.reduce((a,v)=>a+v,0)/vals.length).toFixed(1);
+  const cor=avg>=8?'var(--green)':avg>=6?'var(--yellow)':'var(--red)';
+  med.innerHTML=`Média geral: <strong style="color:${cor}">${avg}/10</strong>`;
+}
+
+function s12StepTat(tatId,freq,delta){
+  const idx=s12SemAtual;
+  const sem=s12GetSemObj(idx);
+  const atual=parseInt(sem.execucoes[tatId])||0;
+  sem.execucoes[tatId]=Math.max(0,Math.min(freq,atual+delta));
+  save();
+  // Atualizar display sem re-render completo
+  const valEl=document.getElementById('s12-val-'+tatId);
+  if(valEl){
+    const v=sem.execucoes[tatId];
+    const pct=Math.min(100,Math.round(v/freq*100));
+    const c=pct>=100?'var(--green)':pct>=60?'var(--yellow)':'var(--red)';
+    valEl.textContent=v;
+    valEl.style.color=c;
+  }
+  // Atualizar score
+  const score=s12CalcScore(sem);
+  const cor=s12ScoreCor(score);
+  const numEl=document.getElementById('s12-score-num');
+  const barEl=document.getElementById('s12-score-bar');
+  const lblEl=document.getElementById('s12-score-lbl');
+  if(numEl){numEl.textContent=score!==null?score+'%':'—';numEl.style.color=cor;}
+  if(barEl){barEl.style.width=(score||0)+'%';barEl.style.background=cor;}
+  if(lblEl){lblEl.textContent=s12ScoreLabel(score);lblEl.style.color=cor;}
+}
+
+function s12SaveSemana(){
+  const idx=s12SemAtual;
+  const sem=s12GetSemObj(idx);
+  sem.notas=(document.getElementById('s12-notas')?.value||'').trim();
+  sem.melhorar=(document.getElementById('s12-melhorar')?.value||'').trim();
+  sem.score=s12CalcScore(sem);
+  sem.num=idx+1;
+  const notas_av={};
+  ['trading','saude','estudo','vida'].forEach(k=>{
+    const v=parseFloat(document.getElementById('s12-nota-'+k)?.value);
+    if(!isNaN(v))notas_av[k]=Math.max(0,Math.min(10,v));
+  });
+  sem.notas_avaliacao=notas_av;
+  save();toast('Semana fechada!');
+}
+
+// ────────────────────────────────
+//  ABA: METAS & TÁTICAS
+// ────────────────────────────────
+function renderS12Metas(){
+  const vEl=document.getElementById('s12-visao-txt');
+  if(vEl)vEl.value=DB.semanas12.visao||'';
+  const div=document.getElementById('s12-metas-list');
+  if(!div)return;
+  const metas=DB.semanas12.metas||[];
+  if(!metas.length){
+    div.innerHTML=`<div class="insight warn" style="max-width:660px"><span class="ins-ico">📌</span><div>
+      <div class="ins-t">Nenhuma meta definida</div>
+      <div class="ins-b">Exemplos: "Ter saúde e energia" → táticas: Academia 5×/sem, Banho gelado 7×/sem, Dormir 22h 7×/sem<br>
+      "Dominar o trade" → Pré-mercado 5×/sem, Replay 5×/sem<br>
+      "Finanças em dia" → Registrar gastos 7×/sem, Revisar metas 1×/sem</div>
+    </div></div>`;
+    return;
+  }
+  const DIAS_OPTS=[1,2,3,4,5,6,7].map(n=>`<option value="${n}">${n}×/sem</option>`).join('');
+  div.innerHTML=metas.map((m,mi)=>`
+    <div class="card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px">
+        <div>
+          <div style="font-size:.68rem;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Meta ${mi+1} de ${metas.length}</div>
+          <div style="font-size:.9rem;font-weight:600;margin-top:2px">${m.texto}</div>
+        </div>
+        <button class="btn btn-r btn-sm btn-ico" onclick="s12DeleteMeta(${mi})" style="flex-shrink:0">✕</button>
+      </div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:8px">Táticas — hábitos diários para alcançar esta meta:</div>
+      <div>${(m.taticas||[]).map((t,ti)=>`
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(48,54,61,.4)">
+          <span style="font-size:.82rem;flex:1">▸ ${t.texto}</span>
+          <select class="fs" style="max-width:90px;font-size:.75rem;padding:3px 6px" onchange="s12SetFreq(${mi},${ti},this.value)">
+            ${[1,2,3,4,5,6,7].map(n=>`<option value="${n}"${(t.freq||1)===n?' selected':''}>${n}×/sem</option>`).join('')}
+          </select>
+          <button class="btn btn-r btn-sm btn-ico" onclick="s12DeleteTatica(${mi},${ti})">✕</button>
+        </div>`).join('')||'<div style="font-size:.75rem;color:var(--faint);padding:4px 0">Nenhuma tática ainda</div>'}
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <input type="text" class="fi" id="s12-tat-inp-${mi}" placeholder="Ex: Academia, Pré-mercado, Banho gelado..." style="flex:1;min-width:140px;font-size:.78rem">
+        <select class="fs" id="s12-tat-freq-${mi}" style="max-width:90px;font-size:.75rem">${DIAS_OPTS}</select>
+        <button class="btn btn-s btn-sm" onclick="s12AddTatica(${mi})" style="white-space:nowrap">+ Adicionar</button>
+      </div>
+    </div>`).join('');
+}
+
+function s12SaveVisao(){
+  DB.semanas12.visao=(document.getElementById('s12-visao-txt').value||'').trim();
+  save();toast('Visão salva!');
+}
+
+function s12AddMeta(){
+  const inp=document.getElementById('s12-meta-txt');
+  const txt=(inp.value||'').trim();
+  if(!txt){toast('Digite a meta','terr');return;}
+  if(!DB.semanas12.metas)DB.semanas12.metas=[];
+  if(DB.semanas12.metas.length>=8){toast('Máximo 8 grupos de hábitos','terr');return;}
+  DB.semanas12.metas.push({id:Date.now(),texto:txt,taticas:[]});
+  inp.value='';
+  save();renderS12Metas();toast('Meta adicionada!');
+}
+
+function s12DeleteMeta(i){
+  if(!confirm('Remover esta meta e suas táticas?'))return;
+  DB.semanas12.metas.splice(i,1);
+  save();renderS12Metas();
+}
+
+function s12AddTatica(mi){
+  const inp=document.getElementById('s12-tat-inp-'+mi);
+  const freqEl=document.getElementById('s12-tat-freq-'+mi);
+  const txt=(inp.value||'').trim();
+  if(!txt){toast('Digite a tática','terr');return;}
+  const freq=parseInt(freqEl?.value)||1;
+  if(!DB.semanas12.metas[mi].taticas)DB.semanas12.metas[mi].taticas=[];
+  DB.semanas12.metas[mi].taticas.push({id:'t'+Date.now(),texto:txt,freq});
+  inp.value='';
+  save();renderS12Metas();toast('Tática adicionada!');
+}
+
+function s12SetFreq(mi,ti,v){
+  DB.semanas12.metas[mi].taticas[ti].freq=parseInt(v)||1;
+  save();
+}
+
+function s12DeleteTatica(mi,ti){
+  DB.semanas12.metas[mi].taticas.splice(ti,1);
+  save();renderS12Metas();
+}
+
+// ────────────────────────────────
+//  ABA: PROGRESSO
+// ────────────────────────────────
+function renderS12Progresso(){
+  const sems=DB.semanas12.semanas||[];
+  const atualIdx=getSemanaAtual();
+  const scores=Array.from({length:12},(_,i)=>sems[i]?sems[i].score:null);
+  const scoreMed=scores.filter(v=>v!==null);
+  const med=scoreMed.length?Math.round(scoreMed.reduce((a,v)=>a+v,0)/scoreMed.length):null;
+  const semsOk=scores.filter(v=>v!==null&&v>=85).length;
+
+  document.getElementById('s12-prog-cards').innerHTML=`
+    <div class="card cb"><div class="cl">Semana Atual</div><div class="cv vb">${atualIdx+1}</div><div class="cs">de 12</div></div>
+    <div class="card ${med===null?'':med>=85?'cg':'cy'}"><div class="cl">Execução Média</div><div class="cv ${med===null?'vp':med>=85?'vg':'vy'}">${med!==null?med+'%':'—'}</div><div class="cs">meta: ≥85%</div></div>
+    <div class="card cg"><div class="cl">Semanas ≥85%</div><div class="cv vg">${semsOk}</div><div class="cs">de ${scoreMed.length} fechadas</div></div>
+    <div class="card ${semsOk>=scoreMed.length*.85&&scoreMed.length>0?'cg':'cy'}"><div class="cl">Status Ciclo</div><div class="cv ${semsOk>=scoreMed.length*.85&&scoreMed.length>0?'vg':'vy'}">${scoreMed.length===0?'—':semsOk>=scoreMed.length*.85?'🔥 Sólido':'⚡ Atenção'}</div><div class="cs">consistência</div></div>`;
+
+  if(cS12)cS12.destroy();
+  const wrap=document.getElementById('c-s12-wrap');
+  const labels=Array.from({length:12},(_,i)=>`S${i+1}`);
+  if(!scoreMed.length){
+    if(wrap)wrap.innerHTML='<div style="height:220px;display:flex;align-items:center;justify-content:center;color:#8b949e;font-size:.85rem">Feche as semanas para ver o progresso aqui</div>';
+  }else{
+    if(wrap)wrap.innerHTML='<canvas id="c-s12"></canvas>';
+    cS12=new Chart(document.getElementById('c-s12'),{type:'line',
+      data:{labels,datasets:[
+        {label:'Execução %',data:scores,borderColor:'#58a6ff',backgroundColor:'rgba(88,166,255,.08)',
+         borderWidth:2,pointRadius:5,pointBackgroundColor:scores.map(v=>v===null?'transparent':v>=85?'#3fb950':v>=60?'#e3b341':'#f85149'),
+         tension:.35,fill:true,spanGaps:false},
+        {label:'Meta 85%',data:Array(12).fill(85),borderColor:'rgba(88,166,255,.5)',borderDash:[6,4],
+         borderWidth:1.5,pointRadius:0,fill:false}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}}},
+        scales:{x:{ticks:{color:'#8b949e',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},
+                y:{min:0,max:100,ticks:{color:'#8b949e',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.05)'}}}}});
+  }
+
+  // Gráfico de linha financeiro: R$ trading por semana vs meta R$2.000
+  if(cS12Fin)cS12Fin.destroy();
+  const finWrap=document.getElementById('c-s12-fin-wrap');
+  const finData=Array.from({length:12},(_,i)=>s12GetTradePnL(i)||null);
+  if(finWrap){
+    finWrap.innerHTML='<canvas id="c-s12-fin"></canvas>';
+    cS12Fin=new Chart(document.getElementById('c-s12-fin'),{type:'line',
+      data:{labels,datasets:[
+        {label:'Trading R$',data:finData,borderColor:'#3fb950',backgroundColor:'rgba(63,185,80,.07)',
+         borderWidth:2,pointRadius:5,pointBackgroundColor:finData.map(v=>v===null?'transparent':v>=2000?'#3fb950':v>=0?'#e3b341':'#f85149'),
+         tension:.35,fill:true,spanGaps:false},
+        {label:'Meta R$2.000',data:Array(12).fill(2000),borderColor:'rgba(227,179,65,.6)',borderDash:[6,4],
+         borderWidth:1.5,pointRadius:0,fill:false}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}},
+          tooltip:{callbacks:{label:ctx=>`R$ ${(ctx.raw||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}`}}},
+        scales:{x:{ticks:{color:'#8b949e',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},
+                y:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.05)'}}}}});
+  }
+
+  const grid=document.getElementById('s12-semanas-grid');
+  if(grid){
+    grid.innerHTML='<div class="sec-title">Histórico das 12 Semanas</div>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">'+
+    Array.from({length:12},(_,i)=>{
+      const s=sems[i];const sc=s?s.score:null;const isCur=i===atualIdx;
+      const cor=s12ScoreCor(sc);
+      const nt=s?.notas_avaliacao||{};
+      const ntVals=Object.values(nt).filter(v=>v!=null);
+      const ntMed=ntVals.length?( ntVals.reduce((a,v)=>a+v,0)/ntVals.length).toFixed(1):null;
+      const ntCor=ntMed>=8?'var(--green)':ntMed>=6?'var(--yellow)':'var(--red)';
+      return`<div class="sem-card${isCur?' cur':''}" style="cursor:pointer" onclick="irS12Semana(${i});show12Tab('semana')">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h4>Semana ${i+1}${isCur?' <span style="font-size:.6rem;color:var(--blue)">(atual)</span>':''}<div style="font-size:.62rem;color:var(--faint);font-weight:400;margin-top:1px">${s12GetDatas(i)}</div></h4>
+          <span style="font-size:.9rem;font-weight:700;color:${cor}">${sc!==null?sc+'%':'—'}</span>
+        </div>
+        ${sc!==null?`<div class="pbar-bg" style="margin-top:5px;height:4px"><div class="pbar" style="width:${sc}%;background:${cor}"></div></div>`:''}
+        ${ntMed!==null?`<div style="font-size:.72rem;margin-top:6px;color:var(--muted)">Nota: <strong style="color:${ntCor}">${ntMed}/10</strong>${nt.trading!=null?' · Trade:'+nt.trading:''}${nt.saude!=null?' · Saúde:'+nt.saude:''}${nt.estudo!=null?' · Estudo:'+nt.estudo:''}${nt.vida!=null?' · Vida:'+nt.vida:''}</div>`:''}
+        ${s&&s.notas?`<div style="font-size:.68rem;color:var(--muted);margin-top:4px;font-style:italic">"${s.notas.slice(0,60)}${s.notas.length>60?'...':''}"</div>`:''}
+      </div>`;
+    }).join('')+'</div>';
+  }
+}
+
+// ────────────────────────────────
+//  ABA: IDEIAS
+// ────────────────────────────────
+function renderS12Ideias(){
+  const div=document.getElementById('s12-ideias-list');
+  if(!div)return;
+  const ideias=DB.semanas12.ideias||[];
+  if(!ideias.length){div.innerHTML=`<div class="empty">Nenhuma ideia registrada ainda.</div>`;return;}
+  div.innerHTML=ideias.map((id,i)=>`
+    <div class="sem-meta-item">
+      <span style="flex:1;font-size:.83rem">${id.texto}</span>
+      <span style="font-size:.68rem;color:var(--faint);margin-right:8px;white-space:nowrap">${id.data||''}</span>
+      <button class="btn btn-r btn-sm btn-ico" onclick="s12DeleteIdeia(${i})">✕</button>
+    </div>`).join('');
+}
+
+function s12AddIdeia(){
+  const inp=document.getElementById('s12-ideia-txt');
+  const txt=(inp.value||'').trim();
+  if(!txt){toast('Digite a ideia','terr');return;}
+  if(!DB.semanas12.ideias)DB.semanas12.ideias=[];
+  DB.semanas12.ideias.unshift({id:Date.now(),texto:txt,data:new Date().toISOString().split('T')[0]});
+  inp.value='';
+  save();renderS12Ideias();toast('Ideia salva!');
+}
+
+function s12DeleteIdeia(i){
+  if(!confirm('Remover ideia?'))return;
+  DB.semanas12.ideias.splice(i,1);
+  save();renderS12Ideias();
+}
+</script>
+</body>
+</html>
