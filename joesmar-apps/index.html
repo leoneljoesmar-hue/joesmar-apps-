@@ -333,8 +333,10 @@ tr:hover td{background:var(--bg3)}
         <div class="chart-title">Resultado de Trading — Mês a Mês <span style="font-size:.72rem;color:var(--muted);font-weight:400">(linha)</span></div>
         <div class="chart-wrap" id="c-trade-linha-wrap" style="height:180px"><canvas id="c-trade-linha"></canvas></div>
       </div>
-      <div class="sec-title">Resumo Anual Completo</div>
-      <div id="resumo-anual"></div>
+      <div id="resumo-anual-wrap" style="display:none">
+        <div class="sec-title">Resumo Anual Completo</div>
+        <div id="resumo-anual"></div>
+      </div>
     </div>
 
     <!-- AGENTE GESTOR -->
@@ -1043,8 +1045,8 @@ function save(){saveToCloud();}
 function closeOv(id){document.getElementById(id).classList.remove('open');}
 function toast(msg,cls='tok'){const t=document.getElementById('toast');t.textContent=msg;t.className=`toast show ${cls}`;clearTimeout(t._t);t._t=setTimeout(()=>t.className='toast',2800);}
 function setHoje(id){const el=document.getElementById(id);if(el)el.value=new Date().toISOString().split('T')[0];}
-function getFiltrados(){return DB.lancamentos.filter(l=>{if(!l.data)return false;return parseInt(l.data.split('-')[1])===mesSel;});}
-function getTradesFiltrados(){return DB.trades.filter(t=>{if(!t.data)return false;return parseInt(t.data.split('-')[1])===mesSel;});}
+function getFiltrados(){return DB.lancamentos.filter(l=>{if(!l.data)return false;if(mesSel===13){const y=new Date().getFullYear();return parseInt(l.data.split('-')[0])===y;}return parseInt(l.data.split('-')[1])===mesSel;});}
+function getTradesFiltrados(){return DB.trades.filter(t=>{if(!t.data)return false;if(mesSel===13){const y=new Date().getFullYear();return parseInt(t.data.split('-')[0])===y;}return parseInt(t.data.split('-')[1])===mesSel;});}
 function hexToRgb(h){const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return`${r},${g},${b}`;}
 const CHART_COLORS=['#58a6ff','#3fb950','#f85149','#e3b341','#bc8cff','#ff7b72','#79c0ff','#56d364','#ffa657','#d2a8ff'];
 function mkDonut(canvasId,wrapId,labels,data,h=200){
@@ -1112,6 +1114,12 @@ function initMeses(){
     btn.onclick=()=>setMes(m);
     pills.appendChild(btn);
   }
+  const anoBtn=document.createElement('button');
+  anoBtn.className='mp'+(mesSel===13?' on':'');
+  anoBtn.textContent='Ano';
+  anoBtn.title='Resumo Anual';
+  anoBtn.onclick=()=>setMes(13);
+  pills.appendChild(anoBtn);
 }
 function setMes(m){
   mesSel=m;
@@ -1137,9 +1145,9 @@ function renderDash(){
 
   document.getElementById('dash-cards').innerHTML=`
     <div class="card ${sl>=0?'cg':'cr2'}">
-      <div class="cl">Saldo do Mês</div>
+      <div class="cl">${mesSel===13?'Saldo do Ano':'Saldo do Mês'}</div>
       <div class="cv ${sl>=0?'vg':'vr'}">${sl>=0?'+':''}${R(sl)}</div>
-      <div class="cs">${MESES[mesSel-1]}</div>
+      <div class="cs">${mesSel===13?'Ano '+new Date().getFullYear():MESES[mesSel-1]}</div>
     </div>
     <div class="card cg"><div class="cl">Total Ganhos</div><div class="cv vg">+${R(g)}</div><div class="cs">${d.filter(l=>l.tipo==='GANHO').length} lançamentos</div></div>
     <div class="card cr2"><div class="cl">Total Gastos</div><div class="cv vr">${R(gs)}</div><div class="cs">${d.filter(l=>l.tipo==='GASTO').length} lançamentos</div></div>
@@ -1294,6 +1302,8 @@ function renderDash(){
       </tbody>
     </table>
     </div>`;
+  const wrap=document.getElementById('resumo-anual-wrap');
+  if(wrap)wrap.style.display=mesSel===13?'block':'none';
 }
 
 // ════════════════════════════════
