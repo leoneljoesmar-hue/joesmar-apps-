@@ -184,6 +184,23 @@ tr:hover td{background:var(--bg3)}
 .fin-acum-cell .wn{font-size:.62rem;color:var(--muted)}
 .fin-acum-cell .wv{font-size:.75rem;font-weight:700}
 
+/* META CICLO 12 SEMANAS */
+.meta-ciclo{background:linear-gradient(135deg,rgba(88,166,255,.08),rgba(188,140,255,.06));border:1px solid rgba(88,166,255,.3);border-radius:10px;padding:14px 18px;margin-bottom:16px}
+.meta-ciclo-title{font-size:.72rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.meta-ciclo-lag{font-size:.88rem;font-weight:600;color:var(--text);margin-bottom:10px}
+.meta-ciclo-lag strong{color:var(--yellow)}
+.meta-ciclo-gate{font-size:.72rem;color:var(--faint);margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.meta-ciclo-gate strong{color:var(--green)}
+.missao-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px}
+.missao-card{border-radius:6px;padding:10px 12px}
+.missao-card.trading{background:rgba(88,166,255,.06);border-left:3px solid var(--blue)}
+.missao-card.corpo{background:rgba(63,185,80,.06);border-left:3px solid var(--green)}
+.missao-card .mc-title{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.missao-card.trading .mc-title{color:var(--blue)}
+.missao-card.corpo .mc-title{color:var(--green)}
+.missao-card ol{margin:0 0 0 18px;padding:0;font-size:.78rem;color:var(--muted);line-height:1.5}
+@media (max-width:640px){.missao-grid{grid-template-columns:1fr}}
+
 /* TABS (12 Semanas + Estudo) */
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px}
 .tab{padding:8px 16px;cursor:pointer;font-size:.82rem;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s;user-select:none}
@@ -717,6 +734,38 @@ tr:hover td{background:var(--bg3)}
 
       <!-- ABA: SEMANA ATUAL -->
       <div id="s12-tab-semana" class="tab-pane on">
+        <!-- Meta do Ciclo -->
+        <div class="meta-ciclo">
+          <div class="meta-ciclo-title">🎯 Ciclo 12 Semanas · 20/04 → 13/07/2026</div>
+          <div class="meta-ciclo-lag">Destino final: <strong>R$2.000/semana na conta real</strong>. Antes disso, o trabalho que precisa ser feito.</div>
+          <div class="missao-grid">
+            <div class="missao-card trading">
+              <div class="mc-title">Missão 1 · Trading</div>
+              <ol>
+                <li>60 pregões simulador com plano (Região + RR + Gatilho)</li>
+                <li>Acerto ≥ 55% em 4 semanas seguidas</li>
+                <li>Zero op. sem gatilho declarado</li>
+                <li>Ritual matinal 5×/sem (Bíblia + Marco Aurélio)</li>
+                <li>1 fichamento de livro/mês no Notion</li>
+              </ol>
+            </div>
+            <div class="missao-card corpo">
+              <div class="mc-title">Missão 2 · Corpo Definido</div>
+              <ol>
+                <li>Musculação 5×/semana — sem faltar</li>
+                <li>Alimentação 7/7 — proteína em toda refeição</li>
+                <li>Sono 7h+ (base da recomposição)</li>
+                <li>Medir peso/cintura 1×/semana</li>
+                <li>Alvo: 85kg · 10% gordura</li>
+              </ol>
+            </div>
+          </div>
+          <div class="meta-ciclo-gate">
+            <strong>Gate S13 (Trading):</strong> 5/5 processo → real com size mínimo. ·
+            <strong style="color:var(--green)">Gate Corpo:</strong> manter academia ≥85% e medidas descendo.
+            R$2k/semana é consequência, não atalho.
+          </div>
+        </div>
         <!-- Cabeçalho semana + score -->
         <div id="s12-sem-header" style="margin-bottom:14px"></div>
         <div id="s12-score-box" style="margin-bottom:16px"></div>
@@ -773,7 +822,7 @@ tr:hover td{background:var(--bg3)}
           <div class="chart-wrap" id="c-s12-wrap" style="height:220px"><canvas id="c-s12"></canvas></div>
         </div>
         <div class="chart-box">
-          <div class="chart-title">Resultado Trading por Semana vs Meta R$2.000 <span style="font-size:.72rem;color:var(--muted);font-weight:400">(linha)</span></div>
+          <div class="chart-title">Resultado Trading por Semana · Meta R$2.000 <span style="font-size:.72rem;color:var(--muted);font-weight:400">(destino — real)</span></div>
           <div class="chart-wrap" id="c-s12-fin-wrap" style="height:200px"><canvas id="c-s12-fin"></canvas></div>
         </div>
         <div id="s12-semanas-grid"></div>
@@ -1927,7 +1976,18 @@ function garantirCamposDB(){
   if(!DB.semanas12.metas)DB.semanas12.metas=[];
   if(!DB.semanas12.semanas)DB.semanas12.semanas=[];
   if(!DB.semanas12.ideias)DB.semanas12.ideias=[];
-  DB.semanas12.startDate='2026-04-01';
+  DB.semanas12.startDate='2026-04-20';
+  // migração v3 — Corpo Definido (20/04/2026)
+  const saude=(DB.semanas12.metas||[]).find(m=>m.texto==='Saúde & Bem-estar'||m.texto==='Saúde & Corpo Definido');
+  if(saude){
+    saude.texto='Saúde & Corpo Definido';
+    const addIfMissing=(h)=>{if(!saude.taticas.some(x=>x.id===h.id||x.texto===h.texto))saude.taticas.push(h);};
+    addIfMissing({id:'h14',texto:'Ritual matinal (Bíblia + Marco Aurélio)',freq:5});
+    addIfMissing({id:'h15',texto:'Sono 7h+',freq:7});
+    addIfMissing({id:'h16',texto:'Medir peso/cintura',freq:1});
+    const gym=saude.taticas.find(h=>h.texto==='Academia');
+    if(gym)gym.texto='Musculação';
+  }
   // Garantir categorias default
   DB_DEFAULT.cats.forEach(dc=>{
     if(!DB.cats.find(c=>c.nome===dc.nome&&c.tipo===dc.tipo))DB.cats.push(dc);
@@ -2212,12 +2272,15 @@ function s12InitDefaultHabits(){
   // Auto-popula grupos padrão baseados na rotina do Joesmar
   const ts=Date.now();
   DB.semanas12.metas=[
-    {id:ts+1,texto:'Saúde & Bem-estar',taticas:[
+    {id:ts+1,texto:'Saúde & Corpo Definido',taticas:[
       {id:'h1',texto:'Meditação',freq:7},
       {id:'h2',texto:'Banho gelado',freq:7},
-      {id:'h3',texto:'Academia',freq:5},
-      {id:'h4',texto:'Alimentação saudável',freq:7},
-      {id:'h5',texto:'Família',freq:7}
+      {id:'h3',texto:'Musculação',freq:5},
+      {id:'h4',texto:'Alimentação (proteína em toda refeição)',freq:7},
+      {id:'h5',texto:'Família',freq:7},
+      {id:'h14',texto:'Ritual matinal (Bíblia + Marco Aurélio)',freq:5},
+      {id:'h15',texto:'Sono 7h+',freq:7},
+      {id:'h16',texto:'Medir peso/cintura',freq:1}
     ]},
     {id:ts+2,texto:'Trading & Mercado',taticas:[
       {id:'h6',texto:'Pré-mercado',freq:5},
