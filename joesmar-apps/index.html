@@ -554,6 +554,14 @@ tr:hover td{background:var(--bg3)}
         <div class="chart-wrap" id="c-setup-wrap" style="height:200px"><canvas id="c-setup"></canvas></div>
       </div>
       <div class="chart-box">
+        <div class="chart-title">Ranking Setup — resultado líquido</div>
+        <div id="setup-ranking" style="overflow-x:auto"></div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-title">Setup × Emoção — onde você ganha e onde perde</div>
+        <div id="setup-emocao" style="overflow-x:auto"></div>
+      </div>
+      <div class="chart-box">
         <div class="chart-title">Resultado por Gatilho (R$)</div>
         <div class="chart-wrap" id="c-emocao-wrap" style="height:160px"><canvas id="c-emocao"></canvas></div>
       </div>
@@ -703,6 +711,10 @@ tr:hover td{background:var(--bg3)}
         <div class="chart-box" style="margin-bottom:0">
           <div class="chart-title">Ganhos / 0×0 / Perdas por Setup</div>
           <div class="chart-wrap" id="c-est-setup-wrap" style="height:220px"><canvas id="c-est-setup"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">Ranking Setup — resultado líquido</div>
+          <div id="est-setup-ranking" style="overflow-x:auto"></div>
         </div>
         <div class="chart-box" style="margin-bottom:0">
           <div class="chart-title">Resultado por Gatilho (R$)</div>
@@ -1052,6 +1064,31 @@ let s12SemAtual=0;
 
 const SETUPS_ESTUDO=['Mínima','Máxima','Pullback 61% região','Pullback 50%','Pullback 38%','Respiro Raso','Rompimento','Outro'];
 const GATS_ESTUDO=['Absorção','Exaustão','Perda de volume','Montagem de posição','Rompimento','Sem gatilho'];
+const EMOCOES=['Calmo','Ansioso','Animado','Frustrado','Cansado','Normal'];
+
+// Plugin: mostra numero dentro de cada segmento empilhado
+const stackLabelPlugin={
+  id:'stackLabels',
+  afterDatasetsDraw(chart){
+    const {ctx}=chart;
+    chart.data.datasets.forEach((ds,i)=>{
+      const meta=chart.getDatasetMeta(i);
+      if(!meta||meta.hidden)return;
+      meta.data.forEach((bar,j)=>{
+        const v=ds.data[j];
+        if(!v)return;
+        const {x,y}=bar.tooltipPosition();
+        ctx.save();
+        ctx.fillStyle='#0d1117';
+        ctx.font='bold 11px system-ui,sans-serif';
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.fillText(v,x,y);
+        ctx.restore();
+      });
+    });
+  }
+};
 
 const DB_DEFAULT={
   lancamentos:[],trades:[],parcelas:[],
@@ -1120,6 +1157,73 @@ function mkBar(canvasId,wrapId,labels,datasets,h=200,opts={}){
       scales:{x:{ticks:{color:'#8b949e',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},
               y:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.05)'}}},
       ...opts}});
+}
+
+// ═════════════ Ranking Setup (por pontos liquidos) ═════════════
+// Ordena setups pelo resultado liquido (pontos ou R$). Aceita trades reais e opsEstudo.
+function renderSetupRanking(ops,containerId,isEstudo){
+  const wrap=document.getElementById(containerId);
+  if(!wrap)return;
+  if(!ops.length){wrap.innerHTML='<div style="color:#8b949e;font-size:.85rem;padding:1rem;text-align:center">Sem dados ainda</div>';return;}
+  const sMap={};
+  ops.forEach(o=>{
+    const s=o.setup||'—';
+    if(!sMap[s])sMap[s]={w:0,l:0,b:0,sum:0};
+    if(o.resultado>0)sMap[s].w++;else if(o.resultado<0)sMap[s].l++;else sMap[s].b++;
+    sMap[s].sum+=o.resultado;
+  });
+  const rows=Object.keys(sMap).map(s=>{
+    const d=sMap[s];const tot=d.w+d.l+d.b;const avg=tot?d.sum/tot:0;
+    return{setup:s,w:d.w,l:d.l,b:d.b,tot,sum:d.sum,avg,wr:tot?Math.round(d.w/tot*100):0};
+  }).sort((a,b)=>b.sum-a.sum);
+  const fmt=v=>isEstudo?((v>=0?'+':'')+v.toFixed(1)+'pts'):((v>=0?'+':'-')+'R$'+Math.abs(v).toFixed(2));
+  wrap.innerHTML=`<table style="width:100%;font-size:.8rem;border-collapse:collapse">
+    <thead><tr style="color:#8b949e;text-align:left">
+      <th style="padding:.4rem;border-bottom:1px solid rgba(255,255,255,.08)">Setup</th>
+      <th style="padding:.4rem;text-align:center;border-bottom:1px solid rgba(255,255,255,.08)">G</th>
+      <th style="padding:.4rem;text-align:center;border-bottom:1px solid rgba(255,255,255,.08)">0×0</th>
+      <th style="padding:.4rem;text-align:center;border-bottom:1px solid rgba(255,255,255,.08)">P</th>
+      <th style="padding:.4rem;text-align:center;border-bottom:1px solid rgba(255,255,255,.08)">WR</th>
+      <th style="padding:.4rem;text-align:right;border-bottom:1px solid rgba(255,255,255,.08)">Líquido</th>
+      <th style="padding:.4rem;text-align:right;border-bottom:1px solid rgba(255,255,255,.08)">Média/op</th>
+    </tr></thead><tbody>${rows.map(r=>{
+      const col=r.sum>0?'#3fb950':r.sum<0?'#f85149':'#8b949e';
+      return`<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+        <td style="padding:.4rem;color:#e6edf3">${r.setup}</td>
+        <td style="padding:.4rem;text-align:center;color:#3fb950">${r.w}</td>
+        <td style="padding:.4rem;text-align:center;color:#8b949e">${r.b}</td>
+        <td style="padding:.4rem;text-align:center;color:#f85149">${r.l}</td>
+        <td style="padding:.4rem;text-align:center;color:#8b949e">${r.wr}%</td>
+        <td style="padding:.4rem;text-align:right;color:${col};font-weight:600">${fmt(r.sum)}</td>
+        <td style="padding:.4rem;text-align:right;color:${col}">${fmt(r.avg)}</td>
+      </tr>`;}).join('')}</tbody></table>`;
+}
+
+// ═════════════ Cruzamento Setup × Emocao (so trades reais) ═════════════
+// Tabela onde cada celula mostra pontos/R$ liquido por combo Setup+Emocao.
+function renderSetupEmocao(trades,containerId,isEstudo){
+  const wrap=document.getElementById(containerId);
+  if(!wrap)return;
+  if(!trades.length){wrap.innerHTML='<div style="color:#8b949e;font-size:.85rem;padding:1rem;text-align:center">Sem dados ainda</div>';return;}
+  const setups=[...new Set(trades.map(t=>t.setup||'—'))];
+  const cell={};// cell[setup][emoc] = {sum,cnt}
+  setups.forEach(s=>{cell[s]={};EMOCOES.forEach(e=>{cell[s][e]={sum:0,cnt:0};});});
+  trades.forEach(t=>{const s=t.setup||'—';const e=t.emocao||'Normal';if(!cell[s]||!cell[s][e])return;cell[s][e].sum+=t.resultado;cell[s][e].cnt++;});
+  const fmt=v=>isEstudo?(v>=0?'+':'')+v.toFixed(1):(v>=0?'+':'')+v.toFixed(0);
+  wrap.innerHTML=`<table style="width:100%;font-size:.75rem;border-collapse:collapse">
+    <thead><tr style="color:#8b949e">
+      <th style="padding:.4rem;text-align:left;border-bottom:1px solid rgba(255,255,255,.08)">Setup \\ Emoção</th>
+      ${EMOCOES.map(e=>`<th style="padding:.4rem;text-align:center;border-bottom:1px solid rgba(255,255,255,.08)">${e}</th>`).join('')}
+    </tr></thead><tbody>${setups.map(s=>`<tr style="border-bottom:1px solid rgba(255,255,255,.04)">
+      <td style="padding:.4rem;color:#e6edf3;font-weight:500">${s}</td>
+      ${EMOCOES.map(e=>{
+        const c=cell[s][e];
+        if(!c.cnt)return'<td style="padding:.4rem;text-align:center;color:#30363d">—</td>';
+        const col=c.sum>0?'rgba(63,185,80,.18)':c.sum<0?'rgba(248,81,73,.18)':'rgba(139,148,158,.12)';
+        const txt=c.sum>0?'#3fb950':c.sum<0?'#f85149':'#8b949e';
+        return`<td style="padding:.4rem;text-align:center;background:${col};color:${txt};font-weight:600">${fmt(c.sum)}<br><span style="font-size:.65rem;color:#8b949e;font-weight:400">${c.cnt} op${c.cnt===1?'':'s'}</span></td>`;
+      }).join('')}
+    </tr>`).join('')}</tbody></table>`;
 }
 
 // ════════════════════════════════
@@ -1784,12 +1888,15 @@ function renderTradeCharts(){
         {label:'0×0',data:sLbl.map(s=>sMap[s].b),backgroundColor:'rgba(139,148,158,.75)',borderRadius:4,borderWidth:0},
         {label:'Perda',data:sLbl.map(s=>sMap[s].l),backgroundColor:'rgba(248,81,73,.85)',borderRadius:4,borderWidth:0}
       ]},
+      plugins:[stackLabelPlugin],
       options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
         plugins:{legend:{display:true,position:'top',labels:{color:'#e6edf3',font:{size:10},boxWidth:10,padding:8}},
           tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.x} op${ctx.parsed.x===1?'':'s'}`}}},
         scales:{x:{stacked:true,ticks:{color:'#8b949e',font:{size:10},stepSize:1,precision:0},grid:{color:'rgba(255,255,255,.04)'}},
                 y:{stacked:true,ticks:{color:'#e6edf3',font:{size:10}},grid:{display:false}}}}});
   }
+  renderSetupRanking(t,'setup-ranking',false);
+  renderSetupEmocao(t,'setup-emocao',false);
   // Gatilho
   const gMap={},gCnt={};
   t.forEach(x=>{const g=x.gatilho||'—';if(!gMap[g])gMap[g]=0;gMap[g]+=x.resultado;gCnt[g]=(gCnt[g]||0)+1;});
@@ -2154,12 +2261,14 @@ function renderAnaliseEstudo(){
         {label:'0×0',data:estB,backgroundColor:'rgba(139,148,158,.75)',borderRadius:4,borderWidth:0},
         {label:'Perda',data:estL,backgroundColor:'rgba(248,81,73,.85)',borderRadius:4,borderWidth:0}
       ]},
+      plugins:[stackLabelPlugin],
       options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
         plugins:{legend:{display:true,position:'top',labels:{color:'#e6edf3',font:{size:10},boxWidth:10,padding:8}},
           tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.parsed.x} op${ctx.parsed.x===1?'':'s'}`}}},
         scales:{x:{stacked:true,ticks:{color:'#8b949e',font:{size:10},stepSize:1,precision:0},grid:{color:'rgba(255,255,255,.04)'}},
                 y:{stacked:true,ticks:{color:'#e6edf3',font:{size:10}},grid:{display:false}}}}});
   }
+  renderSetupRanking(ops,'est-setup-ranking',true);
 
   // Chart: resultado por gatilho
   const gatData=GATS_ESTUDO.map(g=>ops.filter(o=>o.gatilho===g).reduce((a,o)=>a+o.resultado,0));
