@@ -756,9 +756,6 @@ tr:hover td{background:var(--bg3)}
         <div id="s12-sem-header" style="margin-bottom:14px"></div>
         <div id="s12-score-box" style="margin-bottom:16px"></div>
 
-        <!-- Score Processo — 7 dias × 5 critérios -->
-        <div id="s12-processo-box" style="margin-bottom:18px"></div>
-
         <!-- Scorecard: táticas com contagem de execuções -->
         <div id="s12-scorecard" style="margin-bottom:18px"></div>
 
@@ -2291,104 +2288,9 @@ function s12GetTradePnL(semIdx){
 
 function s12GetSemObj(idx){
   while(DB.semanas12.semanas.length<=idx)
-    DB.semanas12.semanas.push({num:DB.semanas12.semanas.length+1,execucoes:{},score:null,notas:'',processo:{}});
+    DB.semanas12.semanas.push({num:DB.semanas12.semanas.length+1,execucoes:{},score:null,notas:''});
   if(!DB.semanas12.semanas[idx].execucoes)DB.semanas12.semanas[idx].execucoes={};
-  if(!DB.semanas12.semanas[idx].processo)DB.semanas12.semanas[idx].processo={};
   return DB.semanas12.semanas[idx];
-}
-
-// Critérios processo — Seg-Sex (trading) e Sáb-Dom (estudo)
-const S12_PROC_TRADING=[
-  {k:'reg', lbl:'Região',   tip:'Região formada antes de entrar (não antecipou)'},
-  {k:'gat', lbl:'Gatilho',  tip:'Gatilho declarado (Absorção / Montagem / Perda volume)'},
-  {k:'cal', lbl:'Calma',    tip:'Calma explícita — esperou a leitura formar'},
-  {k:'ptx', lbl:'Janela',   tip:'Respeitou janela morta 09:55–10:05 (Ptax)'},
-  {k:'rec', lbl:'Registro', tip:'Dia registrado em Finance Pro + Notion (mesmo zerado)'}
-];
-const S12_PROC_ESTUDO=[
-  {k:'lei', lbl:'Leitura',   tip:'Leitura cumprida (livro principal)'},
-  {k:'ia',  lbl:'IA',        tip:'Trilha IA cumprida (Mai/2026)'},
-  {k:'ing', lbl:'Inglês',    tip:'Inglês 1h'},
-  {k:'rit', lbl:'Ritual',    tip:'Ritual matinal (Bíblia + Marco Aurélio)'},
-  {k:'rec', lbl:'Registro',  tip:'Dia registrado'}
-];
-const S12_PROC_DIAS=['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'];
-function s12ProcCrit(d){return d<=4?S12_PROC_TRADING:S12_PROC_ESTUDO;}
-function s12ProcPeso(d){return d<=4?1.0:0.5;}
-
-function s12CalcProcesso(idx){
-  const sem=s12GetSemObj(idx);const p=sem.processo||{};
-  let pts=0;
-  for(let d=0;d<7;d++){
-    const dia=p['d'+d]||{};
-    const crit=s12ProcCrit(d);const peso=s12ProcPeso(d);
-    crit.forEach(c=>{if(dia[c.k])pts+=peso;});
-  }
-  return pts; // max 30
-}
-
-function s12RenderProcesso(){
-  const box=document.getElementById('s12-processo-box');
-  if(!box)return;
-  const idx=s12SemAtual;
-  const sem=s12GetSemObj(idx);
-  const p=sem.processo||{};
-  const total=s12CalcProcesso(idx);
-  const pctTotal=Math.round(total/30*100);
-  const corTotal=pctTotal>=80?'var(--green)':pctTotal>=60?'var(--yellow)':'var(--red)';
-  const linhas=S12_PROC_DIAS.map((diaNome,d)=>{
-    const crit=s12ProcCrit(d);const peso=s12ProcPeso(d);
-    const dia=p['d'+d]||{};
-    let subPts=0;crit.forEach(c=>{if(dia[c.k])subPts+=peso;});
-    const max=crit.length*peso;
-    const pct=max>0?subPts/max:0;
-    const corDia=pct>=0.8?'var(--green)':pct>=0.6?'var(--yellow)':pct>0?'var(--red)':'var(--muted)';
-    const isWk=d>=5;
-    const corNome=isWk?'var(--purple)':'var(--blue)';
-    const cells=crit.map(c=>{
-      const on=!!dia[c.k];
-      return`<td style="text-align:center;padding:4px"><label title="${c.tip}" style="cursor:pointer;display:inline-block">
-        <input type="checkbox" ${on?'checked':''} onchange="s12ToggleProc(${d},'${c.k}')" style="cursor:pointer;width:16px;height:16px;accent-color:${corNome}">
-      </label></td>`;
-    }).join('');
-    return`<tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:6px 8px;font-size:.78rem;color:${corNome};font-weight:600;white-space:nowrap">${diaNome}${isWk?' <span style="font-size:.6rem;color:var(--faint);font-weight:400">·0.5</span>':''}</td>
-      ${cells}
-      <td style="padding:4px 8px;text-align:right;font-size:.75rem;color:${corDia};font-weight:600;white-space:nowrap">${subPts.toFixed(1)}/${max.toFixed(1)}</td>
-    </tr>`;
-  }).join('');
-  const headTradCells=S12_PROC_TRADING.map(c=>`<th style="padding:4px;font-size:.7rem;color:var(--muted);font-weight:600" title="${c.tip}">${c.lbl}</th>`).join('');
-  const legendaEstudo=S12_PROC_ESTUDO.map(c=>`<span title="${c.tip}" style="color:var(--purple)">${c.lbl}</span>`).join(' · ');
-  box.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:8px;padding:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;gap:10px;flex-wrap:wrap">
-      <div style="font-size:.78rem;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.5px">★ Score Processo — 5 critérios/dia</div>
-      <div style="font-size:.85rem;font-weight:700;color:${corTotal}">${total.toFixed(1)}/30 · ${pctTotal}%</div>
-    </div>
-    <div style="font-size:.7rem;color:var(--muted);margin-bottom:10px;line-height:1.4">
-      Seg–Sex (trading) · peso 1.0 · 25pts · Sáb–Dom (estudo) · peso 0.5 · 5pts · alvo ≥80% (24pts)
-    </div>
-    <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;min-width:480px">
-      <thead><tr style="border-bottom:2px solid var(--border)">
-        <th style="padding:4px 8px;font-size:.7rem;color:var(--blue);text-align:left">Dia · Seg–Sex</th>
-        ${headTradCells}
-        <th style="padding:4px 8px;font-size:.7rem;color:var(--muted);text-align:right">Sub</th>
-      </tr></thead>
-      <tbody>${linhas}</tbody>
-    </table></div>
-    <div style="margin-top:8px;font-size:.68rem;color:var(--faint);line-height:1.5">
-      <strong style="color:var(--purple)">Sáb–Dom (critérios estudo):</strong> ${legendaEstudo}
-    </div>
-  </div>`;
-}
-
-function s12ToggleProc(d,k){
-  const idx=s12SemAtual;
-  const sem=s12GetSemObj(idx);
-  if(!sem.processo)sem.processo={};
-  if(!sem.processo['d'+d])sem.processo['d'+d]={};
-  sem.processo['d'+d][k]=!sem.processo['d'+d][k];
-  save();
-  s12RenderProcesso();
 }
 
 // Score = sum(min(feito, planejado)) / sum(planejado) × 100
@@ -2561,8 +2463,6 @@ function renderS12SemanaAtual(){
   });
   // atualizar média
   s12AtualizaMedia();
-  // Score processo
-  s12RenderProcesso();
 }
 
 function s12AtualizaMedia(){
