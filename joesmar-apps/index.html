@@ -1162,12 +1162,11 @@ function renderSetupRanking(ops,containerId,isEstudo){
   const rows=Object.keys(sMap).map(s=>{
     const d=sMap[s];const tot=d.w+d.l+d.b;const avg=tot?d.sum/tot:0;
     const me=bestPos(d.emo),pe=worstNeg(d.emo);
-    const mg=bestPos(d.gat),wg=worstNeg(d.gat);
     const pf=d.lossSum<0?(d.gainSum/Math.abs(d.lossSum)):(d.gainSum>0?Infinity:0);
+    const gatList=Object.keys(d.gat).map(g=>({name:g,sum:d.gat[g],cnt:d.gatCnt[g]})).sort((a,b)=>b.sum-a.sum);
     return{setup:s,w:d.w,l:d.l,b:d.b,tot,sum:d.sum,avg,wr:tot?Math.round(d.w/tot*100):0,pf,long:d.long,short:d.short,
       meEmo:me,meEmoV:me?d.emo[me]:0,peEmo:pe,peEmoV:pe?d.emo[pe]:0,
-      mGat:mg,mGatV:mg?d.gat[mg]:0,mGatC:mg?d.gatCnt[mg]:0,
-      wGat:wg,wGatV:wg?d.gat[wg]:0,wGatC:wg?d.gatCnt[wg]:0};
+      gatList};
   }).sort((a,b)=>b.sum-a.sum);
   const fmt=v=>isEstudo?((v>=0?'+':'')+v.toFixed(1)+'pts'):((v>=0?'+':'-')+'R$'+Math.abs(v).toFixed(2));
   const fmtPF=pf=>pf===Infinity?'∞':pf===0?'—':pf.toFixed(2);
@@ -1182,8 +1181,7 @@ function renderSetupRanking(ops,containerId,isEstudo){
     <strong>PF</strong>=Profit Factor (ganhos ÷ |perdas|; ≥1.5 saudável) ·
     <strong>L/S</strong>=ops LONG/SHORT ·
     <strong>Por op</strong>=resultado médio por operação (líquido ÷ total) ·
-    <strong style="color:#bc8cff">Gatilho ★</strong>=que mais ganhou ·
-    <strong style="color:#ff7b72">Gatilho ⚠</strong>=que mais perdeu
+    <strong style="color:#bc8cff">Gatilhos</strong>=todos os gatilhos usados no setup (ordem: do melhor pro pior · contagem · soma)
   </div>`;
   wrap.innerHTML=legenda+`<table style="width:100%;font-size:.78rem;border-collapse:collapse">
     <thead><tr style="text-align:left">
@@ -1197,8 +1195,7 @@ function renderSetupRanking(ops,containerId,isEstudo){
       <th style="${th};text-align:right" title="Soma total do setup">Líquido</th>
       <th style="${th};text-align:right" title="Resultado médio por operação (Líquido ÷ total de ops). Mostra o quanto, em média, cada op deste setup rende.">Por op</th>
       ${emoCols}
-      <th style="${th};text-align:left" title="Gatilho com maior soma positiva neste setup. Mostra: nome · nº de ops · soma.">Gatilho ★</th>
-      <th style="${th};text-align:left" title="Gatilho com maior soma negativa neste setup. Mostra: nome · nº de ops · soma.">Gatilho ⚠</th>
+      <th style="${th};text-align:left" title="Todos os gatilhos usados no setup. Cada linha mostra: nome · nº de ops · soma. Ordem: do que mais somou (verde) pro que mais perdeu (vermelho).">Gatilhos</th>
     </tr></thead><tbody>${rows.map(r=>{
       const col=r.sum>0?'#3fb950':r.sum<0?'#f85149':'#8b949e';
       const emoCells=isEstudo?'':`
@@ -1215,8 +1212,7 @@ function renderSetupRanking(ops,containerId,isEstudo){
         <td style="${td};text-align:right;color:${col};font-weight:600">${fmt(r.sum)}</td>
         <td style="${td};text-align:right;color:${col}" title="Líquido ${fmt(r.sum)} ÷ ${r.tot} ops">${fmt(r.avg)}</td>
         ${emoCells}
-        <td style="${td};color:#bc8cff">${r.mGat?`<div style="font-weight:500">${r.mGat}</div><div style="font-size:.7rem;color:#8b949e">${r.mGatC} op${r.mGatC===1?'':'s'} · <span style="color:#3fb950">${fmt(r.mGatV)}</span></div>`:'<span style="color:#30363d">—</span>'}</td>
-        <td style="${td};color:#ff7b72">${r.wGat?`<div style="font-weight:500">${r.wGat}</div><div style="font-size:.7rem;color:#8b949e">${r.wGatC} op${r.wGatC===1?'':'s'} · <span style="color:#f85149">${fmt(r.wGatV)}</span></div>`:'<span style="color:#30363d">—</span>'}</td>
+        <td style="${td}">${r.gatList.length?r.gatList.map(g=>{const gc=g.sum>0?'#3fb950':g.sum<0?'#f85149':'#8b949e';return`<div style="display:flex;justify-content:space-between;gap:.6rem;padding:.1rem 0;line-height:1.3"><span style="color:#bc8cff">${g.name}</span><span style="color:#8b949e;font-size:.72rem;white-space:nowrap">${g.cnt}× <span style="color:${gc};font-weight:500">${fmt(g.sum)}</span></span></div>`;}).join(''):'<span style="color:#30363d">—</span>'}</td>
       </tr>`;}).join('')}</tbody></table>`;
 }
 
