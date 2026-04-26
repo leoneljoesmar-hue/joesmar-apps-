@@ -1134,7 +1134,7 @@ function mkBar(canvasId,wrapId,labels,datasets,h=200,opts={}){
 }
 
 // ═════════════ Ranking Setup — tudo em uma tabela ═════════════
-// Por setup: G/0x0/P, WR, Liquido, Media/op, melhor emocao, pior emocao, melhor gatilho.
+// Por setup: G/0x0/P, WR, PF, L/S, Liquido, Media/op, melhor/pior emocao, melhor/pior gatilho.
 // isEstudo=true => formato em pontos (sem campos emocao); false => R$ e com emocao.
 function renderSetupRanking(ops,containerId,isEstudo){
   const wrap=document.getElementById(containerId);
@@ -1143,51 +1143,80 @@ function renderSetupRanking(ops,containerId,isEstudo){
   const sMap={};
   ops.forEach(o=>{
     const s=o.setup||'—';
-    if(!sMap[s])sMap[s]={w:0,l:0,b:0,sum:0,emo:{},gat:{}};
-    if(o.resultado>0)sMap[s].w++;else if(o.resultado<0)sMap[s].l++;else sMap[s].b++;
+    if(!sMap[s])sMap[s]={w:0,l:0,b:0,sum:0,gainSum:0,lossSum:0,long:0,short:0,emo:{},gat:{},gatCnt:{}};
+    if(o.resultado>0){sMap[s].w++;sMap[s].gainSum+=o.resultado;}
+    else if(o.resultado<0){sMap[s].l++;sMap[s].lossSum+=o.resultado;}
+    else sMap[s].b++;
     sMap[s].sum+=o.resultado;
+    if(o.dir==='LONG')sMap[s].long++;else if(o.dir==='SHORT')sMap[s].short++;
     const e=o.emoc||o.emocao;
     if(e){sMap[s].emo[e]=(sMap[s].emo[e]||0)+o.resultado;}
     const g=o.gatilho;
-    if(g){sMap[s].gat[g]=(sMap[s].gat[g]||0)+o.resultado;}
+    if(g){
+      sMap[s].gat[g]=(sMap[s].gat[g]||0)+o.resultado;
+      sMap[s].gatCnt[g]=(sMap[s].gatCnt[g]||0)+1;
+    }
   });
-  const bestKey=(obj,dir)=>{const ks=Object.keys(obj);if(!ks.length)return null;return ks.reduce((a,b)=>dir>0?(obj[b]>obj[a]?b:a):(obj[b]<obj[a]?b:a));};
+  const bestPos=(obj)=>{const ks=Object.keys(obj).filter(k=>obj[k]>0);if(!ks.length)return null;return ks.reduce((a,b)=>obj[b]>obj[a]?b:a);};
+  const worstNeg=(obj)=>{const ks=Object.keys(obj).filter(k=>obj[k]<0);if(!ks.length)return null;return ks.reduce((a,b)=>obj[b]<obj[a]?b:a);};
   const rows=Object.keys(sMap).map(s=>{
     const d=sMap[s];const tot=d.w+d.l+d.b;const avg=tot?d.sum/tot:0;
-    const me=bestKey(d.emo,1),pe=bestKey(d.emo,-1),mg=bestKey(d.gat,1);
-    return{setup:s,w:d.w,l:d.l,b:d.b,tot,sum:d.sum,avg,wr:tot?Math.round(d.w/tot*100):0,
-      meEmo:me,meEmoV:me?d.emo[me]:0,peEmo:pe,peEmoV:pe?d.emo[pe]:0,mGat:mg,mGatV:mg?d.gat[mg]:0};
+    const me=bestPos(d.emo),pe=worstNeg(d.emo);
+    const mg=bestPos(d.gat),wg=worstNeg(d.gat);
+    const pf=d.lossSum<0?(d.gainSum/Math.abs(d.lossSum)):(d.gainSum>0?Infinity:0);
+    return{setup:s,w:d.w,l:d.l,b:d.b,tot,sum:d.sum,avg,wr:tot?Math.round(d.w/tot*100):0,pf,long:d.long,short:d.short,
+      meEmo:me,meEmoV:me?d.emo[me]:0,peEmo:pe,peEmoV:pe?d.emo[pe]:0,
+      mGat:mg,mGatV:mg?d.gat[mg]:0,mGatC:mg?d.gatCnt[mg]:0,
+      wGat:wg,wGatV:wg?d.gat[wg]:0,wGatC:wg?d.gatCnt[wg]:0};
   }).sort((a,b)=>b.sum-a.sum);
   const fmt=v=>isEstudo?((v>=0?'+':'')+v.toFixed(1)+'pts'):((v>=0?'+':'-')+'R$'+Math.abs(v).toFixed(2));
+  const fmtPF=pf=>pf===Infinity?'∞':pf===0?'—':pf.toFixed(2);
+  const pfColor=pf=>pf===0?'#8b949e':pf===Infinity?'#3fb950':pf>=1.5?'#3fb950':pf>=1?'#d29922':'#f85149';
   const th='padding:.45rem;border-bottom:1px solid rgba(255,255,255,.08);color:#8b949e';
   const td='padding:.45rem;border-bottom:1px solid rgba(255,255,255,.04)';
-  const emoCols=isEstudo?'':`<th style="${th};text-align:left">Melhor emoção</th><th style="${th};text-align:left">Pior emoção</th>`;
-  wrap.innerHTML=`<table style="width:100%;font-size:.8rem;border-collapse:collapse">
+  const emoCols=isEstudo?'':`<th style="${th};text-align:left" title="Emoção que mais somou resultado positivo neste setup">Melhor emoção</th><th style="${th};text-align:left" title="Emoção que mais somou resultado negativo neste setup">Pior emoção</th>`;
+  const legenda=`<div style="font-size:.7rem;color:#8b949e;padding:.5rem .25rem;line-height:1.5">
+    <strong style="color:#e6edf3">Como ler:</strong>
+    <span style="color:#3fb950">G</span>=ganhos · <span style="color:#8b949e">0×0</span>=zero a zero · <span style="color:#f85149">P</span>=perdas ·
+    <strong>WR</strong>=% de vitórias ·
+    <strong>PF</strong>=Profit Factor (ganhos ÷ |perdas|; ≥1.5 saudável) ·
+    <strong>L/S</strong>=ops LONG/SHORT ·
+    <strong>Por op</strong>=resultado médio por operação (líquido ÷ total) ·
+    <strong style="color:#bc8cff">Gatilho ★</strong>=que mais ganhou ·
+    <strong style="color:#ff7b72">Gatilho ⚠</strong>=que mais perdeu
+  </div>`;
+  wrap.innerHTML=legenda+`<table style="width:100%;font-size:.78rem;border-collapse:collapse">
     <thead><tr style="text-align:left">
       <th style="${th}">Setup</th>
-      <th style="${th};text-align:center">G</th>
-      <th style="${th};text-align:center">0×0</th>
-      <th style="${th};text-align:center">P</th>
-      <th style="${th};text-align:center">WR</th>
-      <th style="${th};text-align:right">Líquido</th>
-      <th style="${th};text-align:right">Média/op</th>
+      <th style="${th};text-align:center" title="Ops vencedoras (resultado > 0)">G</th>
+      <th style="${th};text-align:center" title="Ops zero a zero (breakeven)">0×0</th>
+      <th style="${th};text-align:center" title="Ops perdedoras (resultado < 0)">P</th>
+      <th style="${th};text-align:center" title="Win Rate — % de ops vencedoras (G ÷ total)">WR</th>
+      <th style="${th};text-align:center" title="Profit Factor — soma de ganhos ÷ |soma de perdas|. ≥1.5 saudável, ≥1 break-even, <1 perdedor.">PF</th>
+      <th style="${th};text-align:center" title="Direção: LONG / SHORT">L/S</th>
+      <th style="${th};text-align:right" title="Soma total do setup">Líquido</th>
+      <th style="${th};text-align:right" title="Resultado médio por operação (Líquido ÷ total de ops). Mostra o quanto, em média, cada op deste setup rende.">Por op</th>
       ${emoCols}
-      <th style="${th};text-align:left">Melhor gatilho</th>
+      <th style="${th};text-align:left" title="Gatilho com maior soma positiva neste setup. Mostra: nome · nº de ops · soma.">Gatilho ★</th>
+      <th style="${th};text-align:left" title="Gatilho com maior soma negativa neste setup. Mostra: nome · nº de ops · soma.">Gatilho ⚠</th>
     </tr></thead><tbody>${rows.map(r=>{
       const col=r.sum>0?'#3fb950':r.sum<0?'#f85149':'#8b949e';
       const emoCells=isEstudo?'':`
-        <td style="${td};color:#e6edf3">${r.meEmo?`${r.meEmo} <span style="color:#3fb950;font-size:.72rem">(${fmt(r.meEmoV)})</span>`:'—'}</td>
-        <td style="${td};color:#e6edf3">${r.peEmo&&r.peEmoV<0?`${r.peEmo} <span style="color:#f85149;font-size:.72rem">(${fmt(r.peEmoV)})</span>`:'—'}</td>`;
+        <td style="${td};color:#e6edf3">${r.meEmo?`<div>${r.meEmo}</div><div style="color:#3fb950;font-size:.7rem">${fmt(r.meEmoV)}</div>`:'<span style="color:#30363d">—</span>'}</td>
+        <td style="${td};color:#e6edf3">${r.peEmo?`<div>${r.peEmo}</div><div style="color:#f85149;font-size:.7rem">${fmt(r.peEmoV)}</div>`:'<span style="color:#30363d">—</span>'}</td>`;
       return`<tr>
         <td style="${td};color:#e6edf3;font-weight:500">${r.setup}</td>
         <td style="${td};text-align:center;color:#3fb950">${r.w}</td>
         <td style="${td};text-align:center;color:#8b949e">${r.b}</td>
         <td style="${td};text-align:center;color:#f85149">${r.l}</td>
         <td style="${td};text-align:center;color:#8b949e">${r.wr}%</td>
+        <td style="${td};text-align:center;color:${pfColor(r.pf)};font-weight:600">${fmtPF(r.pf)}</td>
+        <td style="${td};text-align:center;color:#8b949e;font-size:.72rem">${r.long}/${r.short}</td>
         <td style="${td};text-align:right;color:${col};font-weight:600">${fmt(r.sum)}</td>
-        <td style="${td};text-align:right;color:${col}">${fmt(r.avg)}</td>
+        <td style="${td};text-align:right;color:${col}" title="Líquido ${fmt(r.sum)} ÷ ${r.tot} ops">${fmt(r.avg)}</td>
         ${emoCells}
-        <td style="${td};color:#bc8cff">${r.mGat?`${r.mGat} <span style="color:${r.mGatV>=0?'#3fb950':'#f85149'};font-size:.72rem">(${fmt(r.mGatV)})</span>`:'—'}</td>
+        <td style="${td};color:#bc8cff">${r.mGat?`<div style="font-weight:500">${r.mGat}</div><div style="font-size:.7rem;color:#8b949e">${r.mGatC} op${r.mGatC===1?'':'s'} · <span style="color:#3fb950">${fmt(r.mGatV)}</span></div>`:'<span style="color:#30363d">—</span>'}</td>
+        <td style="${td};color:#ff7b72">${r.wGat?`<div style="font-weight:500">${r.wGat}</div><div style="font-size:.7rem;color:#8b949e">${r.wGatC} op${r.wGatC===1?'':'s'} · <span style="color:#f85149">${fmt(r.wGatV)}</span></div>`:'<span style="color:#30363d">—</span>'}</td>
       </tr>`;}).join('')}</tbody></table>`;
 }
 
