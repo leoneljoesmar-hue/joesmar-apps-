@@ -608,7 +608,8 @@ tr:hover td{background:var(--bg3)}
       <div id="est-tab-ops" class="tab-pane on">
         <div style="max-width:620px;margin-bottom:18px">
           <div class="form-grid">
-            <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="eo-data"></div>
+            <div class="fg"><label class="fl">Data do gráfico</label><input type="date" class="fi" id="eo-data"></div>
+            <div class="fg"><label class="fl">Data do replay</label><input type="date" class="fi" id="eo-data-exec"></div>
             <div class="fg"><label class="fl">Hora</label><input type="time" class="fi" id="eo-hora"></div>
             <div class="fg"><label class="fl">Tipo</label>
               <select class="fs" id="eo-tipo">
@@ -642,7 +643,7 @@ tr:hover td{background:var(--bg3)}
         <div class="tbl-wrap">
           <table>
             <thead><tr>
-              <th>Data</th><th>Hora</th><th>Tipo</th><th>Dir</th>
+              <th>Data gráfico</th><th>Feito em</th><th>Hora</th><th>Tipo</th><th>Dir</th>
               <th>Setup</th><th>Gatilho</th><th>Resultado</th><th>Obs</th><th></th>
             </tr></thead>
             <tbody id="eo-body"></tbody>
@@ -2063,7 +2064,7 @@ function garantirCamposDB(){
 function initApp(){
   garantirCamposDB();
   setHoje('f-data');setHoje('t-data');setHoje('p-data');
-  setHoje('eo-data');setHoje('es-data');
+  setHoje('eo-data');setHoje('eo-data-exec');setHoje('es-data');
   const mesAtual=new Date().toISOString().slice(0,7);
   const trData=document.getElementById('tr-data');
   if(trData)trData.value=mesAtual;
@@ -2097,6 +2098,7 @@ function showEstTab(tab){
 
 function addOpEstudo(){
   const data=document.getElementById('eo-data').value;
+  const dataExec=document.getElementById('eo-data-exec').value||data;
   const hora=document.getElementById('eo-hora').value;
   const tipo=document.getElementById('eo-tipo').value;
   const dir=document.getElementById('eo-dir').value;
@@ -2104,8 +2106,8 @@ function addOpEstudo(){
   const gatilho=document.getElementById('eo-gatilho').value;
   const res=parseFloat(document.getElementById('eo-res').value)||0;
   const obs=document.getElementById('eo-obs').value.trim();
-  if(!data){toast('Informe a data','terr');return;}
-  DB.opsEstudo.push({id:Date.now(),data,hora,tipo,dir,setup,gatilho,resultado:res,obs});
+  if(!data){toast('Informe a data do gráfico','terr');return;}
+  DB.opsEstudo.push({id:Date.now(),data,dataExec,hora,tipo,dir,setup,gatilho,resultado:res,obs});
   save();
   document.getElementById('eo-res').value='';
   document.getElementById('eo-obs').value='';
@@ -2123,12 +2125,13 @@ function renderOpEstudo(){
   const tbody=document.getElementById('eo-body');
   if(!tbody)return;
   const ops=[...DB.opsEstudo].sort((a,b)=>b.data.localeCompare(a.data)||(b.hora||'').localeCompare(a.hora||''));
-  if(!ops.length){tbody.innerHTML=`<tr><td colspan="9" class="empty">Nenhuma operação registrada</td></tr>`;return;}
+  if(!ops.length){tbody.innerHTML=`<tr><td colspan="10" class="empty">Nenhuma operação registrada</td></tr>`;return;}
   tbody.innerHTML=ops.map((op,i)=>{
     const ri=DB.opsEstudo.indexOf(op);
     const cls=op.resultado>0?'vg':op.resultado<0?'vr':'';
     return`<tr>
       <td>${op.data}</td>
+      <td>${op.dataExec||op.data}</td>
       <td>${op.hora||'—'}</td>
       <td><span class="tag be-badge">${op.tipo}</span></td>
       <td><span class="trd-badge ${op.dir==='LONG'?'long':'short'}">${op.dir}</span></td>
