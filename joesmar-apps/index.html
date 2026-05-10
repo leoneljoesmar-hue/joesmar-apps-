@@ -724,7 +724,7 @@ tr:hover td{background:var(--bg3)}
         <!-- Meta do Ciclo -->
         <div class="meta-ciclo">
           <div class="meta-ciclo-title">🎯 Ciclo 12 Semanas · 20/04 → 13/07/2026</div>
-          <div class="meta-ciclo-lag">Destino final: <strong>R$2.000/semana na conta real</strong>. Antes disso, o trabalho que precisa ser feito.</div>
+          <div class="meta-ciclo-lag">Destino final: <strong>R$2.000/semana na conta real</strong>. Estado atual: <strong style="color:var(--yellow)">Simulador Bloco 2 · 11/05 → 31/05/2026</strong>. R$ é consequência, processo é placar.</div>
           <div class="missao-grid">
             <div class="missao-card trading">
               <div class="mc-title">Missão 1 · Trading</div>
@@ -809,7 +809,7 @@ tr:hover td{background:var(--bg3)}
           <div class="chart-wrap" id="c-s12-wrap" style="height:220px"><canvas id="c-s12"></canvas></div>
         </div>
         <div class="chart-box">
-          <div class="chart-title">Resultado Trading por Semana · Meta R$2.000 <span style="font-size:.72rem;color:var(--muted);font-weight:400">(destino — real)</span></div>
+          <div class="chart-title">Resultado Trading por Semana — pts <span style="font-size:.72rem;color:var(--muted);font-weight:400">(Bloco 2: processo · destino real: R$2.000/sem = 200 pts)</span></div>
           <div class="chart-wrap" id="c-s12-fin-wrap" style="height:200px"><canvas id="c-s12-fin"></canvas></div>
         </div>
         <div id="s12-semanas-grid"></div>
@@ -1314,7 +1314,21 @@ function renderDash(){
   const wins=t.filter(x=>x.resultado>0).length;
   const wr=t.length>0?(wins/t.length*100).toFixed(1):0;
 
+  // Bloco 2 — Simulador (11/05 → 31/05/2026)
+  const _b2Start=new Date('2026-05-11T12:00:00'),_b2End=new Date('2026-05-31T12:00:00'),_hoje=new Date();
+  let bloco2Card='';
+  if(_hoje>=_b2Start&&_hoje<=_b2End){
+    const diaB2=Math.floor((_hoje-_b2Start)/(1000*60*60*24))+1;
+    bloco2Card=`<div class="card cy"><div class="cl">Bloco 2 — Simulador</div><div class="cv vy">Dia ${diaB2}/21</div><div class="cs">11/05 → 31/05/2026</div></div>`;
+  } else if(_hoje<_b2Start){
+    const diasAte=Math.ceil((_b2Start-_hoje)/(1000*60*60*24));
+    bloco2Card=`<div class="card cy"><div class="cl">Bloco 2 — Simulador</div><div class="cv vy">Em ${diasAte}d</div><div class="cs">Abre 11/05/2026</div></div>`;
+  } else {
+    bloco2Card=`<div class="card cg"><div class="cl">Bloco 2 — Simulador</div><div class="cv vg">Concluído</div><div class="cs">21 dias completos</div></div>`;
+  }
+
   document.getElementById('dash-cards').innerHTML=`
+    ${bloco2Card}
     <div class="card ${sl>=0?'cg':'cr2'}">
       <div class="cl">${mesSel===13?'Saldo do Ano':'Saldo do Mês'}</div>
       <div class="cv ${sl>=0?'vg':'vr'}">${sl>=0?'+':''}${R(sl)}</div>
@@ -1507,23 +1521,51 @@ function renderAgente(){
   document.getElementById('score-label').textContent=scoreTxt;
   document.getElementById('health-ptr').style.left=`calc(${score}% - 2px)`;
 
+  // ── Quebra das ENTRADAS por fonte ──
+  const ganhoPC=d.filter(l=>l.tipo==='GANHO'&&l.cat==='SALÁRIO').reduce((a,l)=>a+l.valor,0);
+  const ganhoAluguel=d.filter(l=>l.tipo==='GANHO'&&l.cat==='ALUGUEL').reduce((a,l)=>a+l.valor,0);
+  const ganhoTrading=d.filter(l=>l.tipo==='GANHO'&&l.cat==='DAY TRADE').reduce((a,l)=>a+l.valor,0);
+  const ganhoExtras=g-ganhoPC-ganhoAluguel-ganhoTrading;
+  // ── Gastos ESSENCIAIS vs NÃO-ESSENCIAIS ──
+  const catsEssenciais=['MORADIA','TRANSPORTE','SAÚDE','ESTUDOS','COMPRAS'];
+  let gastosEss=0,gastosNaoEss=0;
+  d.filter(l=>l.tipo==='GASTO').forEach(l=>{
+    const ess=catsEssenciais.includes(l.cat)||(l.cat==='ALIMENTAÇÃO'&&l.sub==='Supermercado');
+    if(ess)gastosEss+=l.valor; else gastosNaoEss+=l.valor;
+  });
+  // ── Maior gasto não-essencial (sugestão de corte) ──
+  const naoEssPorCat={};
+  d.filter(l=>l.tipo==='GASTO'&&!catsEssenciais.includes(l.cat)&&!(l.cat==='ALIMENTAÇÃO'&&l.sub==='Supermercado')).forEach(l=>{naoEssPorCat[l.cat]=(naoEssPorCat[l.cat]||0)+l.valor;});
+  const maiorNaoEss=Object.entries(naoEssPorCat).sort((a,b)=>b[1]-a[1])[0];
+
   document.getElementById('agente-resumo').innerHTML=`
     <div style="display:flex;flex-direction:column;gap:8px;font-size:.8rem;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px">
-      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Total Ganhos</span><span style="color:var(--green);font-weight:700">${R(g)}</span></div>
-      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Total Gastos</span><span style="color:var(--red);font-weight:700">${R(gs)}</span></div>
-      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Saldo</span><span style="color:${sl>=0?'var(--green)':'var(--red)'};font-weight:700">${sl<0?'-':''}${R(Math.abs(sl))}</span></div>
+      <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">💰 Entradas</div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">👮 Polícia Civil (PC)</span><span style="font-weight:700">${R(ganhoPC)}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">🏠 Aluguéis</span><span style="font-weight:700">${R(ganhoAluguel)}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">📈 Trading</span><span style="color:${ganhoTrading>=0?'var(--green)':'var(--red)'};font-weight:700">${R(ganhoTrading)}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">✨ Extras</span><span style="font-weight:700">${R(ganhoExtras)}</span></div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px"><span style="color:var(--muted)">Total Ganhos</span><span style="color:var(--green);font-weight:700">${R(g)}</span></div>
+      <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px"></div>
+      <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">💸 Saídas</div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">🔒 Essenciais (Moradia, Mercado, Transporte, Saúde, Parcelas, Estudos)</span><span style="font-weight:700">${R(gastosEss)}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">🎯 Não-essenciais</span><span style="font-weight:700">${R(gastosNaoEss)}</span></div>
+      <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px"><span style="color:var(--muted)">Total Gastos</span><span style="color:var(--red);font-weight:700">${R(gs)}</span></div>
+      <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px"></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)"><strong>Gap mensal (Saldo)</strong></span><span style="color:${sl>=0?'var(--green)':'var(--red)'};font-weight:700;font-size:.95rem">${sl<0?'-':'+'}${R(Math.abs(sl))}</span></div>
       <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">% Gastos/Ganhos</span><span style="color:${pct>100?'var(--red)':pct>80?'var(--yellow)':'var(--green)'};font-weight:700">${pct.toFixed(1)}%</span></div>
       <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px"></div>
-      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Resultado Trading</span><span style="color:${tPnl>=0?'var(--green)':'var(--red)'};font-weight:700">${tPnl>=0?'+':''}${R(tPnl)}</span></div>
-      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Win Rate</span><span style="font-weight:700">${trades.length>0?wr.toFixed(1)+'%':'—'}</span></div>
-      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Trades registrados</span><span style="font-weight:700">${trades.length}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Trading — Resultado</span><span style="color:${tPnl>=0?'var(--green)':'var(--red)'};font-weight:700">${tPnl>=0?'+':''}${R(tPnl)} <span style="opacity:.65;font-weight:500">(${(tPnl/10).toFixed(1)}pts)</span></span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Win Rate · Trades</span><span style="font-weight:700">${trades.length>0?wr.toFixed(1)+'%':'—'} · ${trades.length}</span></div>
     </div>`;
 
   const insights=[];
+  // Alerta de mês vermelho (banner topo)
+  if(sl<0)insights.push({tipo:'danger',ico:'🚨',t:`MÊS VERMELHO · gap de ${R(Math.abs(sl))}`,b:`Saídas (${R(gs)}) superaram entradas (${R(g)}). Padrão se repetir agrava a dívida de R$150k.`});
   if(pct>100)insights.push({tipo:'danger',ico:'🔴',t:'Gastos acima da renda',b:`${pct.toFixed(1)}% gasto. Corte imediato necessário.`});
   else if(pct>80)insights.push({tipo:'warn',ico:'🟡',t:'Gastos próximos do limite',b:`${pct.toFixed(1)}% da renda. Meta é 80%.`});
   else if(g>0)insights.push({tipo:'good',ico:'🟢',t:'Gastos sob controle',b:`${pct.toFixed(1)}% da renda.`});
-  if(sl<0)insights.push({tipo:'danger',ico:'🔴',t:`Saldo negativo: ${R(Math.abs(sl))}`,b:'O mês fechou no vermelho.'});
+  if(gastosNaoEss>gastosEss*0.4&&gastosEss>0)insights.push({tipo:'warn',ico:'🟡',t:`Não-essenciais altos: ${R(gastosNaoEss)}`,b:`${((gastosNaoEss/gs)*100).toFixed(0)}% das saídas. Espaço pra cortar.`});
   if(inv===0&&g>0)insights.push({tipo:'danger',ico:'🔴',t:'Nenhum investimento',b:'Defina pelo menos 10% da renda para guardar.'});
   if(delivery>200)insights.push({tipo:'warn',ico:'🟡',t:`Delivery alto: ${R(delivery)}`,b:'Considere cozinhar mais em casa.'});
   if(trades.length===0)insights.push({tipo:'warn',ico:'🟡',t:'Sem trades registrados',b:'Registre suas operações para acompanhar.'});
@@ -1535,7 +1577,12 @@ function renderAgente(){
     </div>`).join('');
 
   const recs=[];
-  if(pct>80||sl<0)recs.push({n:1,cor:'#f85149',t:'Reduza os maiores gastos variáveis',d:'Identifique cortes de 10-20% nas categorias mais altas.'});
+  // Sugestão concreta baseada no maior gasto não-essencial
+  if(maiorNaoEss&&maiorNaoEss[1]>100){
+    const corte10=maiorNaoEss[1]*0.2;
+    recs.push({n:1,cor:'#f85149',t:`Corte 20% em ${maiorNaoEss[0]} → economiza ${R(corte10)}`,d:`Esse foi o maior gasto não-essencial: ${R(maiorNaoEss[1])}. Reduzir 20% gera ${R(corte10)}/mês — direciona pra Desenrola 2.0 ou reserva.`});
+  }
+  if(pct>80||sl<0)recs.push({n:recs.length+1,cor:'#f85149',t:'Reduza os maiores gastos variáveis',d:'Identifique cortes de 10-20% nas categorias mais altas.'});
   if(inv===0)recs.push({n:recs.length+1,cor:'#e3b341',t:'Crie uma reserva de emergência',d:'Separe ao menos R$200–500 por mês em Reserva.'});
   if(trades.length===0)recs.push({n:recs.length+1,cor:'#58a6ff',t:'Comece a registrar suas operações',d:'Use a aba Trading para registrar cada operação.'});
   if(trades.length>0&&wr<50)recs.push({n:recs.length+1,cor:'#f85149',t:'Reduza o número de trades por dia',d:'Win rate abaixo de 50%: máximo 2 setups por dia.'});
@@ -1863,10 +1910,17 @@ function renderTradeCards(){
   const avgWin=wins>0?(t.filter(x=>x.resultado>0).reduce((a,x)=>a+x.resultado,0)/wins):0;
   const avgLoss=losses>0?(t.filter(x=>x.resultado<0).reduce((a,x)=>a+x.resultado,0)/losses):0;
   const rr=avgLoss!==0?Math.abs(avgWin/avgLoss).toFixed(2):'—';
-  document.getElementById('trade-cards-trading').innerHTML=`
-    <div class="card ${pnl>=0?'cg':'cr2'}"><div class="cl">Resultado Total</div><div class="cv ${pnl>=0?'vg':'vr'}">${pnl>=0?'+':''}${R(pnl)}</div><div class="cs">${t.length} ops</div></div>
+  // Bloco 2 — alerta visual quando data dentro do ciclo
+  const _b2Start=new Date('2026-05-11T12:00:00'),_b2End=new Date('2026-05-31T12:00:00'),_hoje=new Date();
+  let bloco2Alert='';
+  if(_hoje>=_b2Start&&_hoje<=_b2End){
+    const opsReaisNoCiclo=t.filter(x=>{const d=new Date(x.data+'T12:00:00');return d>=_b2Start&&d<=_b2End;}).length;
+    bloco2Alert=`<div class="insight ${opsReaisNoCiclo>0?'danger':'warn'}" style="margin-bottom:12px"><span class="ins-ico">${opsReaisNoCiclo>0?'🔴':'🟡'}</span><div><div class="ins-t">Bloco 2 ativo (11/05 → 31/05) — simulador</div><div class="ins-b">${opsReaisNoCiclo>0?`${opsReaisNoCiclo} op(s) REAL no Finance dentro do Bloco 2 — fora do plano. Registro de simulador é no Notion.`:'Trades reais aqui durante o Bloco 2 = quebra de pivô. Use o Notion para simulador.'}</div></div></div>`;
+  }
+  document.getElementById('trade-cards-trading').innerHTML=bloco2Alert+`
+    <div class="card ${pnl>=0?'cg':'cr2'}"><div class="cl">Resultado Total</div><div class="cv ${pnl>=0?'vg':'vr'}">${pnl>=0?'+':''}${R(pnl)}</div><div class="cs">${(pnl/10).toFixed(1)} pts · ${t.length} ops</div></div>
     <div class="card cb"><div class="cl">Win Rate</div><div class="cv vb">${wr}%</div><div class="cs">${wins}W / ${losses}L${be>0?' / '+be+'BE':''}</div></div>
-    <div class="card cg"><div class="cl">Média Win</div><div class="cv vg">+${R(avgWin)}</div><div class="cs">Loss médio: ${R(avgLoss)}</div></div>
+    <div class="card cg"><div class="cl">Média Win</div><div class="cv vg">+${R(avgWin)}</div><div class="cs">${(avgWin/10).toFixed(1)} pts · Loss médio: ${R(avgLoss)} (${(avgLoss/10).toFixed(1)} pts)</div></div>
     <div class="card cy"><div class="cl">Fator R:R</div><div class="cv vy">${rr}</div><div class="cs">Ideal: acima de 1.5</div></div>`;
 }
 function renderTradeCharts(){
@@ -1909,7 +1963,7 @@ function renderTrades(){
       <td style="color:var(--blue);font-size:.75rem">${x.setup}</td>
       <td style="color:var(--purple);font-size:.75rem">${x.gatilho||'—'}</td>
       <td style="color:var(--muted);font-size:.75rem">${x.emoc}</td>
-      <td><span class="tag ${resBadge}">${x.resultado>=0?'+':''}${R(x.resultado)}</span></td>
+      <td><span class="tag ${resBadge}">${x.resultado>=0?'+':''}${R(x.resultado)} <span style="opacity:.7;font-weight:500">(${x.resultado>=0?'+':''}${(x.resultado/10).toFixed(1)}pts)</span></span></td>
       <td style="color:var(--faint);font-size:.72rem">${x.obs||''}</td>
       <td><button class="btn btn-g btn-ico btn-sm" style="color:var(--red)" onclick="openDelTrade(${idx})">✕</button></td>
     </tr>`;
@@ -2651,25 +2705,25 @@ function renderS12Progresso(){
                 y:{min:0,max:100,ticks:{color:'#8b949e',font:{size:10},callback:v=>v+'%'},grid:{color:'rgba(255,255,255,.05)'}}}}});
   }
 
-  // Gráfico de linha financeiro: R$ trading por semana vs meta R$2.000
+  // Gráfico de linha: pts trading por semana (Bloco 2 = processo / destino real: 200pts = R$2k)
   if(cS12Fin)cS12Fin.destroy();
   const finWrap=document.getElementById('c-s12-fin-wrap');
-  const finData=Array.from({length:12},(_,i)=>s12GetTradePnL(i)||null);
+  const finDataPts=Array.from({length:12},(_,i)=>{const v=s12GetTradePnL(i);return v===null||v===undefined?null:v/10;});
   if(finWrap){
     finWrap.innerHTML='<canvas id="c-s12-fin"></canvas>';
     cS12Fin=new Chart(document.getElementById('c-s12-fin'),{type:'line',
       data:{labels,datasets:[
-        {label:'Trading R$',data:finData,borderColor:'#3fb950',backgroundColor:'rgba(63,185,80,.07)',
-         borderWidth:2,pointRadius:5,pointBackgroundColor:finData.map(v=>v===null?'transparent':v>=2000?'#3fb950':v>=0?'#e3b341':'#f85149'),
+        {label:'Trading (pts)',data:finDataPts,borderColor:'#3fb950',backgroundColor:'rgba(63,185,80,.07)',
+         borderWidth:2,pointRadius:5,pointBackgroundColor:finDataPts.map(v=>v===null?'transparent':v>=200?'#3fb950':v>=0?'#e3b341':'#f85149'),
          tension:.35,fill:true,spanGaps:false},
-        {label:'Meta R$2.000',data:Array(12).fill(2000),borderColor:'rgba(227,179,65,.6)',borderDash:[6,4],
+        {label:'Destino real: 200 pts (R$2k)',data:Array(12).fill(200),borderColor:'rgba(227,179,65,.6)',borderDash:[6,4],
          borderWidth:1.5,pointRadius:0,fill:false}
       ]},
       options:{responsive:true,maintainAspectRatio:false,
         plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}},
-          tooltip:{callbacks:{label:ctx=>`R$ ${(ctx.raw||0).toLocaleString('pt-BR',{minimumFractionDigits:2})}`}}},
+          tooltip:{callbacks:{label:ctx=>{const v=ctx.raw||0;return `${v.toFixed(1)} pts (R$ ${(v*10).toLocaleString('pt-BR',{minimumFractionDigits:2})})`;}}}},
         scales:{x:{ticks:{color:'#8b949e',font:{size:10}},grid:{color:'rgba(255,255,255,.04)'}},
-                y:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.05)'}}}}});
+                y:{ticks:{color:'#8b949e',font:{size:10},callback:v=>v+' pts'},grid:{color:'rgba(255,255,255,.05)'}}}}});
   }
 
   const grid=document.getElementById('s12-semanas-grid');
