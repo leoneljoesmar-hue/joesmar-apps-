@@ -587,6 +587,8 @@ tr:hover td{background:var(--bg3)}
     <div id="panel-rel" class="panel">
       <div style="max-width:400px;display:flex;flex-direction:column;gap:10px">
         <button class="btn btn-p" onclick="exportCSV()">📥 Exportar lançamentos (CSV)</button>
+        <button class="btn btn-g" onclick="document.getElementById('imp-csv-inp').click()">📤 Importar lançamentos (CSV)</button>
+        <input type="file" id="imp-csv-inp" accept=".csv,text/csv" style="display:none" onchange="importCSV(this)">
         <button class="btn btn-g" onclick="exportTradeCSV()">📥 Exportar trades (CSV)</button>
         <button class="btn btn-g" onclick="exportParcCSV()">📥 Exportar parcelas (CSV)</button>
         <button class="btn btn-s" onclick="backupJSON()">💾 Backup completo (JSON)</button>
@@ -1081,7 +1083,7 @@ const DB_DEFAULT={
     {nome:'LAZER',           tipo:'GASTO',cor:'#bc8cff',subs:['Bares/Baladas','Viagens','Festas','Streaming','Cinema/Show','Hobby','Presente','Outro']},
     {nome:'TRADE (custos)',  tipo:'GASTO',cor:'#f0883e',subs:['Aporte conta','Corretagem','IR Trade','Plataforma trading','Outro']},
     {nome:'DÍVIDAS',         tipo:'GASTO',cor:'#ff7b72',subs:['Parcela banco','Parcela cartão','Empréstimo','Renegociação','Juros','Outro']},
-    {nome:'INVESTIMENTO',    tipo:'GASTO',cor:'#56d364',subs:['Reserva Emergência','Reserva Sonhos','Ações','FII','Tesouro Direto','CDB/RDB','Criptomoedas','Outro']},
+    {nome:'INVESTIMENTO',    tipo:'GASTO',cor:'#56d364',subs:['Reserva Emergência','Caixinha Carro','Reserva Sonhos','Ações','FII','Tesouro Direto','CDB/RDB','Criptomoedas','Outro']},
     {nome:'OUTROS',          tipo:'GASTO',cor:'#8b949e',subs:['Taxa/Imposto','Serviços','Diverso','Outro']},
     // ── GANHOS ──────────────────────────────────────────────────────
     {nome:'DAY TRADE',       tipo:'GANHO',cor:'#f0883e',subs:['DOLFUT','WINFUT','EURUSD','Outro']},
@@ -1525,7 +1527,12 @@ function renderAgente(){
   const ganhoPC=d.filter(l=>l.tipo==='GANHO'&&l.cat==='SALÁRIO').reduce((a,l)=>a+l.valor,0);
   const ganhoAluguel=d.filter(l=>l.tipo==='GANHO'&&l.cat==='ALUGUEL').reduce((a,l)=>a+l.valor,0);
   const ganhoTrading=d.filter(l=>l.tipo==='GANHO'&&l.cat==='DAY TRADE').reduce((a,l)=>a+l.valor,0);
-  const ganhoExtras=g-ganhoPC-ganhoAluguel-ganhoTrading;
+  const ganhoApp=d.filter(l=>l.tipo==='GANHO'&&/\bapp\b|\bapps\b|uber|\b99\b/i.test(((l.desc||'')+' '+(l.sub||'')))).reduce((a,l)=>a+l.valor,0);
+  const ganhoExtras=g-ganhoPC-ganhoAluguel-ganhoTrading-ganhoApp;
+  // Caixinha Carro — acumulado (todos os meses), meta BYD Dolphin
+  const CAIXINHA_META=10000;
+  const caixinhaCarro=DB.lancamentos.filter(l=>l.cat==='INVESTIMENTO'&&/caixinha carro/i.test(l.sub||'')).reduce((a,l)=>a+l.valor,0);
+  const caixinhaPct=Math.min(100,CAIXINHA_META>0?caixinhaCarro/CAIXINHA_META*100:0);
   // ── Gastos ESSENCIAIS vs NÃO-ESSENCIAIS ──
   const catsEssenciais=['MORADIA','TRANSPORTE','SAÚDE','ESTUDOS','COMPRAS'];
   let gastosEss=0,gastosNaoEss=0;
@@ -1544,6 +1551,7 @@ function renderAgente(){
       <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">👮 Polícia Civil (PC)</span><span style="font-weight:700">${R(ganhoPC)}</span></div>
       <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">🏠 Aluguéis</span><span style="font-weight:700">${R(ganhoAluguel)}</span></div>
       <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">📈 Trading</span><span style="color:${ganhoTrading>=0?'var(--green)':'var(--red)'};font-weight:700">${R(ganhoTrading)}</span></div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">🚗 Renda de App</span><span style="color:${ganhoApp>0?'var(--green)':'inherit'};font-weight:700">${R(ganhoApp)}</span></div>
       <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">✨ Extras</span><span style="font-weight:700">${R(ganhoExtras)}</span></div>
       <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px"><span style="color:var(--muted)">Total Ganhos</span><span style="color:var(--green);font-weight:700">${R(g)}</span></div>
       <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px"></div>
@@ -1557,6 +1565,11 @@ function renderAgente(){
       <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px"></div>
       <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Trading — Resultado</span><span style="color:${tPnl>=0?'var(--green)':'var(--red)'};font-weight:700">${tPnl>=0?'+':''}${R(tPnl)} <span style="opacity:.65;font-weight:500">(${(tPnl/10).toFixed(1)}pts)</span></span></div>
       <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Win Rate · Trades</span><span style="font-weight:700">${trades.length>0?wr.toFixed(1)+'%':'—'} · ${trades.length}</span></div>
+      <div style="border-top:1px solid var(--border);padding-top:8px;margin-top:2px"></div>
+      <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">🚗 Caixinha Carro · meta BYD Dolphin (jan/2027)</div>
+      <div style="display:flex;justify-content:space-between"><span style="color:var(--muted)">Guardado (acumulado)</span><span style="font-weight:700">${R(caixinhaCarro)} <span style="opacity:.55;font-weight:500">/ ${R(CAIXINHA_META)}</span></span></div>
+      <div style="height:8px;background:var(--bg);border:1px solid var(--border);border-radius:5px;overflow:hidden;margin-top:2px"><div style="height:100%;width:${caixinhaPct}%;background:linear-gradient(90deg,#3fb950,#56d364)"></div></div>
+      <div style="font-size:.7rem;color:var(--faint);text-align:right;margin-top:2px">${caixinhaPct.toFixed(0)}% · registre em INVESTIMENTO › Caixinha Carro</div>
     </div>`;
 
   const insights=[];
@@ -2060,6 +2073,50 @@ function exportCSV(){
   baixar('\uFEFF'+hdr+rows,`Finance-Lancamentos-${new Date().toISOString().slice(0,10)}.csv`,'text/csv;charset=utf-8;');
   toast('CSV exportado!','tinf');
 }
+function _csvLine(line){
+  const out=[];let cur='',q=false;
+  for(let i=0;i<line.length;i++){
+    const ch=line[i];
+    if(q){ if(ch==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+    else { if(ch==='"')q=true; else if(ch===','){out.push(cur);cur='';} else cur+=ch; }
+  }
+  out.push(cur);return out;
+}
+function importCSV(inp){
+  const f=inp.files[0];if(!f){return;}
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const txt=String(e.target.result).replace(/^﻿/,'');
+      const lines=txt.split(/\r?\n/).filter(l=>l.trim().length);
+      if(!lines.length){toast('CSV vazio','terr');inp.value='';return;}
+      let start=0;
+      if(/DATA/i.test(lines[0])&&/VALOR/i.test(lines[0]))start=1;
+      const chave=l=>`${l.data}|${l.tipo}|${l.cat}|${l.sub||''}|${Number(l.valor).toFixed(2)}|${(l.desc||'').trim()}`;
+      const existentes=new Set(DB.lancamentos.map(chave));
+      let novos=0,dup=0,erros=0;
+      for(let i=start;i<lines.length;i++){
+        const c=_csvLine(lines[i]);
+        if(c.length<7){erros++;continue;}
+        const data=(c[0]||'').trim();
+        const valor=parseFloat(String(c[6]||'').replace(',','.'));
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(data)||isNaN(valor)){erros++;continue;}
+        const tipo=(c[2]||'').toUpperCase().includes('GANHO')?'GANHO':'GASTO';
+        const reg={data,tipo,cat:(c[3]||'OUTROS').trim(),sub:(c[4]||'').trim(),desc:(c[5]||'').trim(),valor,pagto:(c[7]||'').trim(),obs:(c[8]||'').trim(),dia:(c[1]||'').trim()||DIAS[new Date(data+'T12:00:00').getDay()]};
+        if(existentes.has(chave(reg))){dup++;continue;}
+        existentes.add(chave(reg));
+        reg.id=Date.now()+i;
+        DB.lancamentos.push(reg);
+        novos++;
+      }
+      save();renderDash();
+      toast(`Importado: ${novos} novo(s) · ${dup} já existia(m)${erros?' · '+erros+' erro(s)':''}`,'tinf');
+      go('dash');
+    }catch(err){console.error(err);toast('Erro ao ler o CSV','terr');}
+  };
+  r.readAsText(f,'UTF-8');
+  inp.value='';
+}
 function exportTradeCSV(){
   const hdr='DATA,HORA,DIREÇÃO,ENTRADA,SAÍDA,LOTES,SETUP,GATILHO,EMOÇÃO,RESULTADO,OBSERVAÇÃO\n';
   const rows=[...DB.trades].sort((a,b)=>a.data.localeCompare(b.data)).map(t=>[t.data,t.hora||'',t.dir,t.entry||'',t.exit||'',t.lots,t.setup,t.gatilho||'',t.emoc,t.resultado.toFixed(2),`"${(t.obs||'').replace(/"/g,'""')}"`].join(',')).join('\n');
@@ -2109,6 +2166,16 @@ function garantirCamposDB(){
     const gym=saude.taticas.find(h=>h.texto==='Academia');
     if(gym)gym.texto='Musculação';
   }
+  // migração v4 — Renda & Caixa: Rodar app (Uber) + Caixinha Carro (21/05/2026)
+  if((DB.semanas12.metas||[]).length){
+    let renda=DB.semanas12.metas.find(m=>m.texto==='Renda & Caixa');
+    if(!renda){renda={id:Date.now()+7,texto:'Renda & Caixa',taticas:[]};DB.semanas12.metas.push(renda);}
+    if(!renda.taticas)renda.taticas=[];
+    if(!renda.taticas.some(t=>t.texto==='Rodar app (Uber)'))renda.taticas.push({id:'h17',texto:'Rodar app (Uber)',freq:3});
+    if(!renda.taticas.some(t=>t.texto==='Guardar p/ Caixinha Carro'))renda.taticas.push({id:'h18',texto:'Guardar p/ Caixinha Carro',freq:1});
+  }
+  const _inv=(DB.cats||[]).find(c=>c.nome==='INVESTIMENTO'&&c.tipo==='GASTO');
+  if(_inv&&Array.isArray(_inv.subs)&&!_inv.subs.includes('Caixinha Carro'))_inv.subs.splice(1,0,'Caixinha Carro');
   // Garantir categorias default
   DB_DEFAULT.cats.forEach(dc=>{
     if(!DB.cats.find(c=>c.nome===dc.nome&&c.tipo===dc.tipo))DB.cats.push(dc);
@@ -2405,6 +2472,10 @@ function s12InitDefaultHabits(){
       {id:'h11',texto:'Estudo de IA',freq:5},
       {id:'h12',texto:'Leitura',freq:7},
       {id:'h13',texto:'Inglês',freq:5}
+    ]},
+    {id:ts+4,texto:'Renda & Caixa',taticas:[
+      {id:'h17',texto:'Rodar app (Uber)',freq:3},
+      {id:'h18',texto:'Guardar p/ Caixinha Carro',freq:1}
     ]}
   ];
   save();
