@@ -725,7 +725,7 @@ tr:hover td{background:var(--bg3)}
       <div id="s12-tab-semana" class="tab-pane on">
         <!-- Meta do Ciclo -->
         <div class="meta-ciclo">
-          <div class="meta-ciclo-title">🎯 Ciclo 12 Semanas · 20/04 → 13/07/2026</div>
+          <div class="meta-ciclo-title" id="s12-ciclo-titulo">🎯 Ciclo 12 Semanas · 20/04 → 13/07/2026</div>
           <div class="meta-ciclo-lag">Destino final: <strong>R$2.000/semana na conta real</strong>. Estado atual: <strong style="color:var(--yellow)">Simulador Bloco 2 · 11/05 → 31/05/2026</strong>. R$ é consequência, processo é placar.</div>
           <div class="missao-grid">
             <div class="missao-card trading">
@@ -1038,6 +1038,7 @@ let cAgCat=null,cAgTrade=null;
 let cExtCat=null,cExtGanho=null;
 let cMetasChart=null,cEmocT=null;
 let s12SemAtual=0;
+let s12CicloView=0;
 
 const SETUPS_ESTUDO=['Mínima','Máxima','Pullback 61% região','Pullback 50%','Pullback 38%','Respiro Raso','Rompimento','Outro'];
 const GATS_ESTUDO=['Absorção','Exaustão','Perda de volume','Montagem de posição','Rompimento','Sem gatilho'];
@@ -2392,11 +2393,34 @@ function s12GetDatas(idx){
   return`${f(ini)} – ${f(fim)}`;
 }
 
+const S12_SEM_POR_CICLO=12;
+// Quantos ciclos de 12 semanas cabem até o fim de 2026 (último ciclo começa antes de dez/2026)
+function s12TotalCiclos(){
+  if(!DB.semanas12.startDate)return 1;
+  const start=new Date(DB.semanas12.startDate+'T12:00:00');
+  const limite=new Date('2026-12-01T12:00:00');
+  let n=1;
+  while(true){
+    const ini=new Date(start);ini.setDate(start.getDate()+n*84);
+    if(ini>limite)break;
+    n++;
+  }
+  return n;
+}
+function s12CicloDoIdx(globalIdx){return Math.floor(globalIdx/S12_SEM_POR_CICLO);}
+function s12CicloDatas(ciclo){
+  const start=new Date(DB.semanas12.startDate+'T12:00:00');
+  const ini=new Date(start);ini.setDate(start.getDate()+ciclo*84);
+  const fim=new Date(ini);fim.setDate(ini.getDate()+83);
+  const f=d=>d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'});
+  return{ini,fim,iniStr:f(ini),fimStr:f(fim)};
+}
 function getSemanaAtual(){
   if(!DB.semanas12.startDate)return 0;
   const start=new Date(DB.semanas12.startDate+'T12:00:00');
   const diff=Math.floor((new Date()-start)/(7*24*60*60*1000));
-  return Math.max(0,Math.min(11,diff));
+  const maxIdx=s12TotalCiclos()*S12_SEM_POR_CICLO-1;
+  return Math.max(0,Math.min(maxIdx,diff));
 }
 
 // Retorna PnL de trading da semana semIdx (0-based) do ciclo de 12 semanas
@@ -2484,31 +2508,61 @@ function s12InitDefaultHabits(){
 function renderSemanas12(){
   s12InitDefaultHabits();
   s12SemAtual=getSemanaAtual();
+  s12CicloView=s12CicloDoIdx(s12SemAtual);
   renderS12SemanaAtual();
 }
 
 function irS12Semana(idx){
   s12SemAtual=idx;
+  s12CicloView=s12CicloDoIdx(idx);
   renderS12SemanaAtual();
+}
+
+function irS12Ciclo(delta){
+  const total=s12TotalCiclos();
+  const novo=Math.max(0,Math.min(total-1,s12CicloView+delta));
+  if(novo===s12CicloView)return;
+  s12CicloView=novo;
+  const cur=getSemanaAtual();
+  s12SemAtual=(s12CicloDoIdx(cur)===novo)?cur:novo*S12_SEM_POR_CICLO;
+  const progAtiva=document.getElementById('s12-tab-progresso')?.classList.contains('on');
+  if(progAtiva)renderS12Progresso();else renderS12SemanaAtual();
 }
 
 function renderS12SemanaAtual(){
   const idx=s12SemAtual;
+  const ciclo=s12CicloView;
+  const total=s12TotalCiclos();
+  const base=ciclo*S12_SEM_POR_CICLO;
+  const semInCiclo=idx-base;
   const sem=s12GetSemObj(idx);
-  const pct=Math.round(((idx+1)/12)*100);
+  const pct=Math.round(((semInCiclo+1)/12)*100);
   const score=s12CalcScore(sem);
   const cor=s12ScoreCor(score);
+  const curGlobal=getSemanaAtual();
+  const cd=s12CicloDatas(ciclo);
+
+  // Título dinâmico do box do ciclo
+  const tEl=document.getElementById('s12-ciclo-titulo');
+  if(tEl)tEl.innerHTML=`🎯 Ciclo ${ciclo+1} de ${total} · 12 Semanas · ${cd.iniStr} → ${cd.fimStr}`;
 
   // Header ciclo
   const header=document.getElementById('s12-sem-header');
   if(header){
-    const curIdx=getSemanaAtual();
+    const podeAnt=ciclo>0,podeProx=ciclo<total-1;
+    const navCiclo=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border)">
+      <button onclick="irS12Ciclo(-1)" ${podeAnt?'':'disabled'} style="padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:${podeAnt?'var(--blue)':'var(--faint)'};cursor:${podeAnt?'pointer':'default'};font-family:inherit;font-size:.8rem">◀</button>
+      <span style="font-size:.82rem;font-weight:700">Ciclo ${ciclo+1} <span style="color:var(--muted);font-weight:400">de ${total}</span></span>
+      <button onclick="irS12Ciclo(1)" ${podeProx?'':'disabled'} style="padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:${podeProx?'var(--blue)':'var(--faint)'};cursor:${podeProx?'pointer':'default'};font-family:inherit;font-size:.8rem">▶</button>
+      <span style="font-size:.7rem;color:var(--muted)">${cd.iniStr} → ${cd.fimStr}</span>
+    </div>`;
     header.innerHTML=`
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px 16px">
+        ${navCiclo}
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:10px">
           <div>
-            <div style="font-size:1.1rem;font-weight:700;color:var(--blue)">Semana ${idx+1} <span style="color:var(--muted);font-size:.8rem;font-weight:400">de 12</span>${idx!==curIdx?'<span style="font-size:.6rem;color:var(--faint);margin-left:6px">(histórico)</span>':''}</div>
-            <div style="font-size:.72rem;color:var(--muted)">${s12GetDatas(idx)} · Ciclo desde ${DB.semanas12.startDate||'—'}</div>
+            <div style="font-size:1.1rem;font-weight:700;color:var(--blue)">Semana ${semInCiclo+1} <span style="color:var(--muted);font-size:.8rem;font-weight:400">de 12</span>${idx!==curGlobal?'<span style="font-size:.6rem;color:var(--faint);margin-left:6px">(histórico)</span>':''}</div>
+            <div style="font-size:.72rem;color:var(--muted)">${s12GetDatas(idx)} · Ciclo ${ciclo+1}/${total}</div>
           </div>
           <div style="flex:1;min-width:160px">
             <div class="pbar-bg" style="height:7px"><div class="pbar" style="width:${pct}%;background:var(--blue)"></div></div>
@@ -2517,12 +2571,13 @@ function renderS12SemanaAtual(){
         </div>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
           ${Array.from({length:12},(_,i)=>{
-            const isSel=i===idx;const isCur=i===curIdx;
-            const sc=(DB.semanas12.semanas[i]||{}).score;
+            const g=base+i;
+            const isSel=g===idx;const isCur=g===curGlobal;
+            const sc=(DB.semanas12.semanas[g]||{}).score;
             const bg=isSel?'var(--accent)':'transparent';
-            const col=isSel?'#fff':isCur?'var(--yellow)':sc!==null?'var(--green)':'var(--muted)';
-            const brd=isSel?'var(--accent)':isCur?'var(--yellow)':sc!==null?'rgba(63,185,80,.4)':'var(--border)';
-            return`<button onclick="irS12Semana(${i})" title="${s12GetDatas(i)}" style="padding:2px 9px;border-radius:20px;border:1px solid ${brd};font-size:.68rem;font-weight:700;cursor:pointer;background:${bg};color:${col};font-family:inherit;transition:all .15s">S${i+1}</button>`;
+            const col=isSel?'#fff':isCur?'var(--yellow)':(sc!==null&&sc!==undefined)?'var(--green)':'var(--muted)';
+            const brd=isSel?'var(--accent)':isCur?'var(--yellow)':(sc!==null&&sc!==undefined)?'rgba(63,185,80,.4)':'var(--border)';
+            return`<button onclick="irS12Semana(${g})" title="${s12GetDatas(g)}" style="padding:2px 9px;border-radius:20px;border:1px solid ${brd};font-size:.68rem;font-weight:700;cursor:pointer;background:${bg};color:${col};font-family:inherit;transition:all .15s">S${i+1}</button>`;
           }).join('')}
         </div>
       </div>`;
@@ -2742,15 +2797,27 @@ function s12DeleteTatica(mi,ti){
 //  ABA: PROGRESSO
 // ────────────────────────────────
 function renderS12Progresso(){
+  const ciclo=s12CicloView;
+  const total=s12TotalCiclos();
+  const base=ciclo*S12_SEM_POR_CICLO;
+  const cd=s12CicloDatas(ciclo);
   const sems=DB.semanas12.semanas||[];
-  const atualIdx=getSemanaAtual();
-  const scores=Array.from({length:12},(_,i)=>sems[i]?sems[i].score:null);
-  const scoreMed=scores.filter(v=>v!==null);
+  const curGlobal=getSemanaAtual();
+  const liveInCycle=curGlobal-base;
+  const scores=Array.from({length:12},(_,i)=>sems[base+i]?sems[base+i].score:null);
+  const scoreMed=scores.filter(v=>v!==null&&v!==undefined);
   const med=scoreMed.length?Math.round(scoreMed.reduce((a,v)=>a+v,0)/scoreMed.length):null;
-  const semsOk=scores.filter(v=>v!==null&&v>=85).length;
+  const semsOk=scores.filter(v=>v!==null&&v!==undefined&&v>=85).length;
 
-  document.getElementById('s12-prog-cards').innerHTML=`
-    <div class="card cb"><div class="cl">Semana Atual</div><div class="cv vb">${atualIdx+1}</div><div class="cs">de 12</div></div>
+  const podeAnt=ciclo>0,podeProx=ciclo<total-1;
+  const bAnt=`<button onclick="irS12Ciclo(-1)" ${podeAnt?'':'disabled'} style="padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:${podeAnt?'var(--blue)':'var(--faint)'};cursor:${podeAnt?'pointer':'default'};font-family:inherit;font-size:.8rem">◀</button>`;
+  const bProx=`<button onclick="irS12Ciclo(1)" ${podeProx?'':'disabled'} style="padding:3px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:${podeProx?'var(--blue)':'var(--faint)'};cursor:${podeProx?'pointer':'default'};font-family:inherit;font-size:.8rem">▶</button>`;
+  const navHtml=`<div style="grid-column:1/-1;display:flex;align-items:center;gap:10px;flex-wrap:wrap">${bAnt}<span style="font-size:.85rem;font-weight:700">Ciclo ${ciclo+1} <span style="color:var(--muted);font-weight:400">de ${total}</span></span>${bProx}<span style="font-size:.72rem;color:var(--muted)">${cd.iniStr} → ${cd.fimStr}</span></div>`;
+  const semAtualVal=(liveInCycle>=0&&liveInCycle<12)?(liveInCycle+1):'—';
+  const semAtualSub=(liveInCycle>=0&&liveInCycle<12)?'de 12':(curGlobal>base+11?'ciclo encerrado':'ainda não começou');
+
+  document.getElementById('s12-prog-cards').innerHTML=navHtml+`
+    <div class="card cb"><div class="cl">Semana Atual</div><div class="cv vb">${semAtualVal}</div><div class="cs">${semAtualSub}</div></div>
     <div class="card ${med===null?'':med>=85?'cg':'cy'}"><div class="cl">Execução Média</div><div class="cv ${med===null?'vp':med>=85?'vg':'vy'}">${med!==null?med+'%':'—'}</div><div class="cs">meta: ≥85%</div></div>
     <div class="card cg"><div class="cl">Semanas ≥85%</div><div class="cv vg">${semsOk}</div><div class="cs">de ${scoreMed.length} fechadas</div></div>
     <div class="card ${semsOk>=scoreMed.length*.85&&scoreMed.length>0?'cg':'cy'}"><div class="cl">Status Ciclo</div><div class="cv ${semsOk>=scoreMed.length*.85&&scoreMed.length>0?'vg':'vy'}">${scoreMed.length===0?'—':semsOk>=scoreMed.length*.85?'🔥 Sólido':'⚡ Atenção'}</div><div class="cs">consistência</div></div>`;
@@ -2779,7 +2846,7 @@ function renderS12Progresso(){
   // Gráfico de linha: pts trading por semana (Bloco 2 = processo / destino real: 200pts = R$2k)
   if(cS12Fin)cS12Fin.destroy();
   const finWrap=document.getElementById('c-s12-fin-wrap');
-  const finDataPts=Array.from({length:12},(_,i)=>{const v=s12GetTradePnL(i);return v===null||v===undefined?null:v/10;});
+  const finDataPts=Array.from({length:12},(_,i)=>{const v=s12GetTradePnL(base+i);return v===null||v===undefined?null:v/10;});
   if(finWrap){
     finWrap.innerHTML='<canvas id="c-s12-fin"></canvas>';
     cS12Fin=new Chart(document.getElementById('c-s12-fin'),{type:'line',
@@ -2799,18 +2866,19 @@ function renderS12Progresso(){
 
   const grid=document.getElementById('s12-semanas-grid');
   if(grid){
-    grid.innerHTML='<div class="sec-title">Histórico das 12 Semanas</div>'+
+    grid.innerHTML='<div class="sec-title">Histórico — Ciclo '+(ciclo+1)+' de '+total+'</div>'+
     '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">'+
     Array.from({length:12},(_,i)=>{
-      const s=sems[i];const sc=s?s.score:null;const isCur=i===atualIdx;
+      const g=base+i;
+      const s=sems[g];const sc=s?s.score:null;const isCur=g===curGlobal;
       const cor=s12ScoreCor(sc);
       const nt=s?.notas_avaliacao||{};
       const ntVals=Object.values(nt).filter(v=>v!=null);
       const ntMed=ntVals.length?( ntVals.reduce((a,v)=>a+v,0)/ntVals.length).toFixed(1):null;
       const ntCor=ntMed>=8?'var(--green)':ntMed>=6?'var(--yellow)':'var(--red)';
-      return`<div class="sem-card${isCur?' cur':''}" style="cursor:pointer" onclick="irS12Semana(${i});show12Tab('semana')">
+      return`<div class="sem-card${isCur?' cur':''}" style="cursor:pointer" onclick="irS12Semana(${g});show12Tab('semana')">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <h4>Semana ${i+1}${isCur?' <span style="font-size:.6rem;color:var(--blue)">(atual)</span>':''}<div style="font-size:.62rem;color:var(--faint);font-weight:400;margin-top:1px">${s12GetDatas(i)}</div></h4>
+          <h4>Semana ${i+1}${isCur?' <span style="font-size:.6rem;color:var(--blue)">(atual)</span>':''}<div style="font-size:.62rem;color:var(--faint);font-weight:400;margin-top:1px">${s12GetDatas(g)}</div></h4>
           <span style="font-size:.9rem;font-weight:700;color:${cor}">${sc!==null?sc+'%':'—'}</span>
         </div>
         ${sc!==null?`<div class="pbar-bg" style="margin-top:5px;height:4px"><div class="pbar" style="width:${sc}%;background:${cor}"></div></div>`:''}
