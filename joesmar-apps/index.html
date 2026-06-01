@@ -1088,6 +1088,7 @@ const DB_DEFAULT={
     {nome:'OUTROS',          tipo:'GASTO',cor:'#8b949e',subs:['Taxa/Imposto','Serviços','Diverso','Outro']},
     // ── GANHOS ──────────────────────────────────────────────────────
     {nome:'DAY TRADE',       tipo:'GANHO',cor:'#f0883e',subs:['DOLFUT','WINFUT','EURUSD','Outro']},
+    {nome:'APP/CORRIDA',     tipo:'GANHO',cor:'#39c5cf',subs:['Uber','99','InDrive','Outro']},
     {nome:'SALÁRIO',         tipo:'GANHO',cor:'#3fb950',subs:['PC','PJ','Adiantamento','13º','Férias','Outro']},
     {nome:'JUROS/RENDA FIXA',tipo:'GANHO',cor:'#56d364',subs:['CDB','Tesouro Direto','LCI/LCA','Poupança','FII','Outro']},
     {nome:'ALUGUEL',         tipo:'GANHO',cor:'#e3b341',subs:['Imóvel','Temporada','Financiamento recebido','Outro']},
@@ -1528,7 +1529,7 @@ function renderAgente(){
   const ganhoPC=d.filter(l=>l.tipo==='GANHO'&&l.cat==='SALÁRIO').reduce((a,l)=>a+l.valor,0);
   const ganhoAluguel=d.filter(l=>l.tipo==='GANHO'&&l.cat==='ALUGUEL').reduce((a,l)=>a+l.valor,0);
   const ganhoTrading=d.filter(l=>l.tipo==='GANHO'&&l.cat==='DAY TRADE').reduce((a,l)=>a+l.valor,0);
-  const ganhoApp=d.filter(l=>l.tipo==='GANHO'&&/\bapp\b|\bapps\b|uber|\b99\b/i.test(((l.desc||'')+' '+(l.sub||'')))).reduce((a,l)=>a+l.valor,0);
+  const ganhoApp=d.filter(l=>l.tipo==='GANHO'&&(l.cat==='APP/CORRIDA'||/\bapp\b|\bapps\b|uber|\b99\b/i.test(((l.desc||'')+' '+(l.sub||''))))).reduce((a,l)=>a+l.valor,0);
   const ganhoExtras=g-ganhoPC-ganhoAluguel-ganhoTrading-ganhoApp;
   // Caixinha Carro — acumulado (todos os meses), meta BYD Dolphin
   const CAIXINHA_META=10000;
@@ -2181,6 +2182,16 @@ function garantirCamposDB(){
   DB_DEFAULT.cats.forEach(dc=>{
     if(!DB.cats.find(c=>c.nome===dc.nome&&c.tipo===dc.tipo))DB.cats.push(dc);
   });
+  // migração v5 — categoria APP/CORRIDA: tirar ganhos de app de OUTROS (31/05/2026)
+  if(!DB.migV5App){
+    (DB.lancamentos||[]).forEach(l=>{
+      if(l.tipo==='GANHO' && l.cat==='OUTROS' && /^app/i.test((l.desc||'').trim())){
+        l.cat='APP/CORRIDA';
+        if(!['Uber','99','InDrive','Outro'].includes(l.sub))l.sub='Outro';
+      }
+    });
+    DB.migV5App=1;
+  }
 }
 
 function initApp(){
