@@ -646,8 +646,9 @@ tr:hover td{background:var(--bg3)}
         <div style="max-width:620px;margin-bottom:18px">
           <div class="sec-title">Registrar Simulador</div>
           <div class="form-grid">
-            <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="sim-data"></div>
-            <div class="fg"><label class="fl">Hora</label><input type="time" class="fi" id="sim-hora"></div>
+            <div class="fg"><label class="fl">Data (hoje · automático)</label><input type="date" class="fi" id="sim-data" readonly style="opacity:.55;cursor:default"></div>
+            <div class="fg"><label class="fl">Hora entrada</label><input type="time" class="fi" id="sim-hora-in"></div>
+            <div class="fg"><label class="fl">Hora saída</label><input type="time" class="fi" id="sim-hora-out"></div>
             <div class="fg"><label class="fl">Direção</label>
               <select class="fs" id="sim-dir"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
             </div>
@@ -670,7 +671,7 @@ tr:hover td{background:var(--bg3)}
         <div class="sec-title">Histórico — Simulador (mês)</div>
         <div class="tbl-wrap">
           <table>
-            <thead><tr><th>Data</th><th>Hora</th><th>Dir</th><th>Setup</th><th>Gatilho</th><th>Resultado</th><th>Obs</th><th></th></tr></thead>
+            <thead><tr><th>Data</th><th>Entrada→Saída</th><th>Dir</th><th>Setup</th><th>Gatilho</th><th>Resultado</th><th>Obs</th><th></th></tr></thead>
             <tbody id="est-body-SIMULADOR"></tbody>
           </table>
         </div>
@@ -2229,19 +2230,24 @@ function getEstOps(tipo){
 }
 function addEstOp(tipo){
   const p=tipo==='REPLAY'?'rep':'sim';
-  const data=document.getElementById(p+'-data').value;
-  if(!data){toast('Informe a data','terr');return;}
-  DB.opsEstudo.push({id:Date.now(),data,dataExec:data,
-    hora:document.getElementById(p+'-hora').value,
-    tipo,
+  const data=document.getElementById(p+'-data').value||new Date().toISOString().slice(0,10);
+  const op={id:Date.now(),data,dataExec:data,tipo,
     dir:document.getElementById(p+'-dir').value,
     setup:document.getElementById(p+'-setup').value,
     gatilho:document.getElementById(p+'-gatilho').value,
     resultado:parseFloat(document.getElementById(p+'-res').value)||0,
-    obs:document.getElementById(p+'-obs').value.trim()});
+    obs:document.getElementById(p+'-obs').value.trim()};
+  if(tipo==='SIMULADOR'){
+    op.hora=document.getElementById('sim-hora-in').value;
+    op.horaSaida=document.getElementById('sim-hora-out').value;
+  } else {
+    op.hora=document.getElementById('rep-hora').value;
+  }
+  DB.opsEstudo.push(op);
   save();
   document.getElementById(p+'-res').value='';
   document.getElementById(p+'-obs').value='';
+  if(tipo==='SIMULADOR'){document.getElementById('sim-hora-in').value='';document.getElementById('sim-hora-out').value='';}
   renderEstBox(tipo);
   toast(tipo==='REPLAY'?'Replay registrado!':'Simulador registrado!');
 }
@@ -2294,7 +2300,7 @@ function renderEstBox(tipo){
       const cls=op.resultado>0?'vg':op.resultado<0?'vr':'';
       return`<tr>
         <td>${(op.data||'').split('-').reverse().join('/')}</td>
-        <td>${op.hora||'—'}</td>
+        <td>${op.hora||'—'}${op.horaSaida?' → '+op.horaSaida:''}</td>
         <td><span class="trd-badge ${op.dir==='LONG'?'long':'short'}">${op.dir}</span></td>
         <td>${op.setup}</td>
         <td>${op.gatilho||'—'}</td>
