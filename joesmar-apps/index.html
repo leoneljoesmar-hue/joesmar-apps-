@@ -602,99 +602,76 @@ tr:hover td{background:var(--bg3)}
     <!-- ESTUDO & REPLAY -->
     <div id="panel-estudo" class="panel">
       <div class="tabs">
-        <div class="tab on" onclick="setEstFiltro('TODOS',this)">Todos</div>
-        <div class="tab" onclick="setEstFiltro('REPLAY',this)">Replay</div>
-        <div class="tab" onclick="setEstFiltro('SIMULADOR',this)">Simulado</div>
+        <div class="tab on" onclick="showEstBox('REPLAY',this)">📺 Replay</div>
+        <div class="tab" onclick="showEstBox('SIMULADOR',this)">🎮 Simulador</div>
       </div>
 
-      <!-- ABA: OPERAÇÕES DE ESTUDO -->
-      <div id="est-tab-ops" class="tab-pane on">
+      <!-- CAIXA: REPLAY -->
+      <div id="est-box-REPLAY" class="tab-pane on">
         <div style="max-width:620px;margin-bottom:18px">
+          <div class="sec-title">Registrar Replay</div>
           <div class="form-grid">
-            <div class="fg"><label class="fl">Data do gráfico</label><input type="date" class="fi" id="eo-data"></div>
-            <div class="fg"><label class="fl">Data do replay</label><input type="date" class="fi" id="eo-data-exec"></div>
-            <div class="fg"><label class="fl">Hora</label><input type="time" class="fi" id="eo-hora"></div>
-            <div class="fg"><label class="fl">Tipo</label>
-              <select class="fs" id="eo-tipo">
-                <option value="REPLAY">Replay</option>
-                <option value="SIMULADOR">Simulado</option>
-              </select>
-            </div>
+            <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="rep-data"></div>
+            <div class="fg"><label class="fl">Hora</label><input type="time" class="fi" id="rep-hora"></div>
             <div class="fg"><label class="fl">Direção</label>
-              <select class="fs" id="eo-dir">
-                <option value="LONG">LONG</option>
-                <option value="SHORT">SHORT</option>
-              </select>
+              <select class="fs" id="rep-dir"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
             </div>
-            <div class="fg"><label class="fl">Setup</label>
-              <select class="fs" id="eo-setup"></select>
-            </div>
-            <div class="fg"><label class="fl">Gatilho</label>
-              <select class="fs" id="eo-gatilho"></select>
-            </div>
-            <div class="fg"><label class="fl">Resultado (R$)</label>
-              <input type="number" class="fi" id="eo-res" placeholder="Ex: 150 ou -80" step="0.01">
-            </div>
-            <div class="fg form-full"><label class="fl">Observação</label>
-              <input type="text" class="fi" id="eo-obs" placeholder="O que aconteceu nessa operação?">
-            </div>
+            <div class="fg"><label class="fl">Setup</label><select class="fs" id="rep-setup"></select></div>
+            <div class="fg"><label class="fl">Gatilho</label><select class="fs" id="rep-gatilho"></select></div>
+            <div class="fg"><label class="fl">Resultado (R$)</label><input type="number" class="fi" id="rep-res" placeholder="Ex: 150 ou -80" step="0.01"></div>
+            <div class="fg form-full"><label class="fl">Observação</label><input type="text" class="fi" id="rep-obs" placeholder="O que aconteceu nessa operação?"></div>
           </div>
-          <button class="btn btn-p" onclick="addOpEstudo()">💾 Registrar Operação</button>
+          <button class="btn btn-p" onclick="addEstOp('REPLAY')">💾 Registrar Replay</button>
         </div>
-        <div class="cards-grid" id="est-ops-cards"></div>
+        <div class="cards-grid" id="est-cards-REPLAY"></div>
         <div class="chart-box">
-          <div class="chart-title">Equity Curve — Replay e Simulado (mês)</div>
-          <div class="chart-wrap" id="c-eo-equity-wrap" style="height:200px"><canvas id="c-eo-equity"></canvas></div>
+          <div class="chart-title">Equity Curve — Replay (mês)</div>
+          <div class="chart-wrap" id="est-eq-REPLAY-wrap" style="height:200px"><canvas id="est-eq-REPLAY"></canvas></div>
         </div>
         <div class="chart-box">
-          <div class="chart-title">Ranking por Setup (mês)</div>
-          <div id="eo-setup-ranking" style="overflow-x:auto"></div>
+          <div class="chart-title">Ranking por Setup — Replay (mês)</div>
+          <div id="est-rank-REPLAY" style="overflow-x:auto"></div>
         </div>
-        <div class="sec-title">Histórico de Operações</div>
+        <div class="sec-title">Histórico — Replay (mês)</div>
         <div class="tbl-wrap">
           <table>
-            <thead><tr>
-              <th>Data gráfico</th><th>Feito em</th><th>Hora</th><th>Tipo</th><th>Dir</th>
-              <th>Setup</th><th>Gatilho</th><th>Resultado</th><th>Obs</th><th></th>
-            </tr></thead>
-            <tbody id="eo-body"></tbody>
+            <thead><tr><th>Data</th><th>Hora</th><th>Dir</th><th>Setup</th><th>Gatilho</th><th>Resultado</th><th>Obs</th><th></th></tr></thead>
+            <tbody id="est-body-REPLAY"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- ABA: SESSÕES DE ESTUDO -->
-      <div id="est-tab-sess" class="tab-pane">
-        <div style="max-width:560px;margin-bottom:18px">
+      <!-- CAIXA: SIMULADOR -->
+      <div id="est-box-SIMULADOR" class="tab-pane">
+        <div style="max-width:620px;margin-bottom:18px">
+          <div class="sec-title">Registrar Simulador</div>
           <div class="form-grid">
-            <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="es-data"></div>
-            <div class="fg"><label class="fl">Tipo</label>
-              <select class="fs" id="es-tipo">
-                <option value="REPLAY">Replay</option>
-                <option value="LEITURA">Leitura</option>
-                <option value="VIDEO">Vídeo/Aula</option>
-                <option value="ANÁLISE">Análise Gráfico</option>
-                <option value="OUTRO">Outro</option>
-              </select>
+            <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="sim-data"></div>
+            <div class="fg"><label class="fl">Hora</label><input type="time" class="fi" id="sim-hora"></div>
+            <div class="fg"><label class="fl">Direção</label>
+              <select class="fs" id="sim-dir"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
             </div>
-            <div class="fg"><label class="fl">Duração (min)</label>
-              <input type="number" class="fi" id="es-min" placeholder="Ex: 60" min="1">
-            </div>
-            <div class="fg"><label class="fl">Setups estudados</label>
-              <input type="text" class="fi" id="es-setups" placeholder="Ex: Pullback 50%, Mínima">
-            </div>
-            <div class="fg form-full"><label class="fl">Observações / O que aprendi</label>
-              <input type="text" class="fi" id="es-obs" placeholder="Principais aprendizados desta sessão...">
-            </div>
+            <div class="fg"><label class="fl">Setup</label><select class="fs" id="sim-setup"></select></div>
+            <div class="fg"><label class="fl">Gatilho</label><select class="fs" id="sim-gatilho"></select></div>
+            <div class="fg"><label class="fl">Resultado (R$)</label><input type="number" class="fi" id="sim-res" placeholder="Ex: 150 ou -80" step="0.01"></div>
+            <div class="fg form-full"><label class="fl">Observação</label><input type="text" class="fi" id="sim-obs" placeholder="O que aconteceu nessa operação?"></div>
           </div>
-          <button class="btn btn-p" onclick="addSessaoEstudo()">📚 Registrar Sessão</button>
+          <button class="btn btn-p" onclick="addEstOp('SIMULADOR')">💾 Registrar Simulador</button>
         </div>
-        <div class="sec-title">Histórico de Sessões</div>
+        <div class="cards-grid" id="est-cards-SIMULADOR"></div>
+        <div class="chart-box">
+          <div class="chart-title">Equity Curve — Simulador (mês)</div>
+          <div class="chart-wrap" id="est-eq-SIMULADOR-wrap" style="height:200px"><canvas id="est-eq-SIMULADOR"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">Ranking por Setup — Simulador (mês)</div>
+          <div id="est-rank-SIMULADOR" style="overflow-x:auto"></div>
+        </div>
+        <div class="sec-title">Histórico — Simulador (mês)</div>
         <div class="tbl-wrap">
           <table>
-            <thead><tr>
-              <th>Data</th><th>Tipo</th><th>Duração</th><th>Setups</th><th>Observações</th><th></th>
-            </tr></thead>
-            <tbody id="es-body"></tbody>
+            <thead><tr><th>Data</th><th>Hora</th><th>Dir</th><th>Setup</th><th>Gatilho</th><th>Resultado</th><th>Obs</th><th></th></tr></thead>
+            <tbody id="est-body-SIMULADOR"></tbody>
           </table>
         </div>
       </div>
@@ -1283,7 +1260,7 @@ function go(panel){
   if(panel==='metas')renderMetas();
   if(panel==='cats')renderCats();
   if(panel==='parc'){syncParcCats();renderParcCards();renderParcelas();}
-  if(panel==='estudo'){syncEstudoSelects();renderOpEstudo();renderSessaoEstudo();}
+  if(panel==='estudo'){syncEstudoSelects();renderEstAll();}
   if(panel==='analise-estudo')renderAnaliseEstudo();
   if(panel==='semanas12')renderSemanas12();
 }
@@ -1314,7 +1291,7 @@ function setMes(m){
   if(panel==='extrato')renderExtrato();
   if(panel==='metas')renderMetas();
   if(panel==='trading'){renderTradeCards();renderTradeCharts();renderTrades();}
-  if(panel==='estudo')renderOpEstudo();
+  if(panel==='estudo')renderEstAll();
   if(panel==='analise-estudo')renderAnaliseEstudo();
 }
 
@@ -2208,7 +2185,7 @@ function garantirCamposDB(){
 function initApp(){
   garantirCamposDB();
   setHoje('f-data');setHoje('t-data');setHoje('p-data');
-  setHoje('eo-data');setHoje('eo-data-exec');setHoje('es-data');
+  setHoje('rep-data');setHoje('sim-data');
   const mesAtual=new Date().toISOString().slice(0,7);
   const trData=document.getElementById('tr-data');
   if(trData)trData.value=mesAtual;
@@ -2225,119 +2202,107 @@ document.addEventListener('DOMContentLoaded',()=>{
 // ════════════════════════════════
 //  ESTUDO & REPLAY
 // ════════════════════════════════
-let cEstSetup=null,cEstGatilho=null,cEstEquity=null,cEoEquity=null;
+let cEstSetup=null,cEstGatilho=null,cEstEquity=null;
+const estCharts={REPLAY:null,SIMULADOR:null};
 
 function syncEstudoSelects(){
-  const setup=document.getElementById('eo-setup');
-  const gatilho=document.getElementById('eo-gatilho');
-  if(setup){setup.innerHTML=SETUPS_ESTUDO.map(s=>`<option>${s}</option>`).join('');}
-  if(gatilho){gatilho.innerHTML=GATS_ESTUDO.map(g=>`<option>${g}</option>`).join('');}
-}
-
-function showEstTab(tab){
-  document.querySelectorAll('#panel-estudo .tab').forEach((t,i)=>{t.classList.toggle('on',i===(tab==='ops'?0:1));});
-  document.getElementById('est-tab-ops').classList.toggle('on',tab==='ops');
-  document.getElementById('est-tab-sess').classList.toggle('on',tab==='sess');
-}
-
-function addOpEstudo(){
-  const data=document.getElementById('eo-data').value;
-  const dataExec=document.getElementById('eo-data-exec').value||data;
-  const hora=document.getElementById('eo-hora').value;
-  const tipo=document.getElementById('eo-tipo').value;
-  const dir=document.getElementById('eo-dir').value;
-  const setup=document.getElementById('eo-setup').value;
-  const gatilho=document.getElementById('eo-gatilho').value;
-  const res=parseFloat(document.getElementById('eo-res').value)||0;
-  const obs=document.getElementById('eo-obs').value.trim();
-  if(!data){toast('Informe a data do gráfico','terr');return;}
-  DB.opsEstudo.push({id:Date.now(),data,dataExec,hora,tipo,dir,setup,gatilho,resultado:res,obs});
-  save();
-  document.getElementById('eo-res').value='';
-  document.getElementById('eo-obs').value='';
-  renderOpEstudo();
-  toast('Operação registrada!');
-}
-
-function deleteOpEstudo(idx){
-  if(!confirm('Excluir operação?'))return;
-  DB.opsEstudo.splice(idx,1);
-  save();renderOpEstudo();
-}
-
-let estFiltro='TODOS';
-function setEstFiltro(f,el){
-  estFiltro=f;
-  document.querySelectorAll('#panel-estudo .tabs .tab').forEach(t=>t.classList.remove('on'));
-  if(el)el.classList.add('on');
-  const tp=document.getElementById('eo-tipo');
-  if(tp&&(f==='REPLAY'||f==='SIMULADOR'))tp.value=f;
-  renderOpEstudo();
-}
-function getOpsEstudoFiltradas(){
-  return (DB.opsEstudo||[]).filter(o=>{
-    if(!o.data)return false;
-    const mesOk = mesSel===13 ? parseInt(o.data.split('-')[0])===new Date().getFullYear() : parseInt(o.data.split('-')[1])===mesSel;
-    const tipoOk = estFiltro==='TODOS' || o.tipo===estFiltro;
-    return mesOk && tipoOk;
+  ['rep','sim'].forEach(p=>{
+    const s=document.getElementById(p+'-setup'),g=document.getElementById(p+'-gatilho');
+    if(s)s.innerHTML=SETUPS_ESTUDO.map(x=>`<option>${x}</option>`).join('');
+    if(g)g.innerHTML=GATS_ESTUDO.map(x=>`<option>${x}</option>`).join('');
   });
 }
-function renderOpEstudoCards(){
-  const el=document.getElementById('est-ops-cards');if(!el)return;
-  const t=getOpsEstudoFiltradas();
-  const pnl=t.reduce((a,x)=>a+x.resultado,0);
-  const wins=t.filter(x=>x.resultado>0).length;
-  const losses=t.filter(x=>x.resultado<0).length;
-  const be=t.filter(x=>x.resultado===0).length;
-  const wr=t.length>0?(wins/t.length*100).toFixed(1):0;
-  const rep=t.filter(x=>x.tipo==='REPLAY').length;
-  const sim=t.filter(x=>x.tipo==='SIMULADOR').length;
-  el.innerHTML=`
-    <div class="card ${pnl>=0?'cg':'cr2'}"><div class="cl">Resultado do Mês</div><div class="cv ${pnl>=0?'vg':'vr'}">${pnl>=0?'+':''}${R(pnl)}</div><div class="cs">${(pnl/10).toFixed(1)} pts · ${t.length} ops</div></div>
-    <div class="card cb"><div class="cl">Win Rate</div><div class="cv vb">${wr}%</div><div class="cs">${wins}W / ${losses}L${be>0?' / '+be+'BE':''}</div></div>
-    <div class="card cp"><div class="cl">Replay × Simulado</div><div class="cv vp">${rep} / ${sim}</div><div class="cs">replay / simulado</div></div>`;
+
+function showEstBox(tipo,el){
+  document.querySelectorAll('#panel-estudo .tabs .tab').forEach(t=>t.classList.remove('on'));
+  if(el)el.classList.add('on');
+  document.getElementById('est-box-REPLAY').classList.toggle('on',tipo==='REPLAY');
+  document.getElementById('est-box-SIMULADOR').classList.toggle('on',tipo==='SIMULADOR');
+  renderEstBox(tipo);
 }
-function renderOpEstudoChart(){
-  const t=getOpsEstudoFiltradas().sort((a,b)=>a.data.localeCompare(b.data)||(a.hora||'').localeCompare(b.hora||''));
-  let acum=0;const eqData=t.map(x=>{acum+=x.resultado;return acum;});
-  if(cEoEquity)cEoEquity.destroy();
-  const wrap=document.getElementById('c-eo-equity-wrap');
+
+function getEstOps(tipo){
+  return (DB.opsEstudo||[]).filter(o=>{
+    if(!o.data||o.tipo!==tipo)return false;
+    return mesSel===13 ? parseInt(o.data.split('-')[0])===new Date().getFullYear() : parseInt(o.data.split('-')[1])===mesSel;
+  });
+}
+function addEstOp(tipo){
+  const p=tipo==='REPLAY'?'rep':'sim';
+  const data=document.getElementById(p+'-data').value;
+  if(!data){toast('Informe a data','terr');return;}
+  DB.opsEstudo.push({id:Date.now(),data,dataExec:data,
+    hora:document.getElementById(p+'-hora').value,
+    tipo,
+    dir:document.getElementById(p+'-dir').value,
+    setup:document.getElementById(p+'-setup').value,
+    gatilho:document.getElementById(p+'-gatilho').value,
+    resultado:parseFloat(document.getElementById(p+'-res').value)||0,
+    obs:document.getElementById(p+'-obs').value.trim()});
+  save();
+  document.getElementById(p+'-res').value='';
+  document.getElementById(p+'-obs').value='';
+  renderEstBox(tipo);
+  toast(tipo==='REPLAY'?'Replay registrado!':'Simulador registrado!');
+}
+function delEstOp(idx,tipo){
+  if(!confirm('Excluir operação?'))return;
+  DB.opsEstudo.splice(idx,1);save();renderEstBox(tipo);
+}
+function renderEstAll(){renderEstBox('REPLAY');renderEstBox('SIMULADOR');}
+function renderEstBox(tipo){
+  const t=getEstOps(tipo);
+  const cor=tipo==='REPLAY'?'#bc8cff':'#39c5cf';
+  const el=document.getElementById('est-cards-'+tipo);
+  if(el){
+    const pnl=t.reduce((a,x)=>a+x.resultado,0);
+    const wins=t.filter(x=>x.resultado>0).length;
+    const losses=t.filter(x=>x.resultado<0).length;
+    const be=t.filter(x=>x.resultado===0).length;
+    const wr=t.length>0?(wins/t.length*100).toFixed(1):0;
+    const avgWin=wins>0?t.filter(x=>x.resultado>0).reduce((a,x)=>a+x.resultado,0)/wins:0;
+    const avgLoss=losses>0?t.filter(x=>x.resultado<0).reduce((a,x)=>a+x.resultado,0)/losses:0;
+    const fr=avgLoss!==0?Math.abs(avgWin/avgLoss).toFixed(2):'—';
+    el.innerHTML=`
+      <div class="card ${pnl>=0?'cg':'cr2'}"><div class="cl">Resultado do Mês</div><div class="cv ${pnl>=0?'vg':'vr'}">${pnl>=0?'+':''}${R(pnl)}</div><div class="cs">${(pnl/10).toFixed(1)} pts · ${t.length} ops</div></div>
+      <div class="card cb"><div class="cl">Win Rate</div><div class="cv vb">${wr}%</div><div class="cs">${wins}W / ${losses}L${be>0?' / '+be+'BE':''}</div></div>
+      <div class="card cy"><div class="cl">Fator R:R</div><div class="cv vy">${fr}</div><div class="cs">Média win +${R(avgWin)} · loss ${R(avgLoss)}</div></div>`;
+  }
+  const sorted=[...t].sort((a,b)=>a.data.localeCompare(b.data)||(a.hora||'').localeCompare(b.hora||''));
+  let acum=0;const eqData=sorted.map(x=>{acum+=x.resultado;return acum;});
+  if(estCharts[tipo]){estCharts[tipo].destroy();estCharts[tipo]=null;}
+  const wrap=document.getElementById('est-eq-'+tipo+'-wrap');
   if(!eqData.length){if(wrap)wrap.innerHTML='<div style="height:200px;display:flex;align-items:center;justify-content:center;color:#8b949e;font-size:.85rem">Nenhuma operação neste mês</div>';}
-  else{
-    if(wrap)wrap.innerHTML='<canvas id="c-eo-equity"></canvas>';
-    cEoEquity=new Chart(document.getElementById('c-eo-equity'),{type:'line',
-      data:{labels:t.map((_,i)=>'Op '+(i+1)),datasets:[
-        {data:eqData,borderWidth:2,pointRadius:4,tension:.3,fill:true,borderColor:'#bc8cff',backgroundColor:'rgba(188,140,255,.07)',pointBackgroundColor:eqData.map(v=>v>=0?'#3fb950':'#f85149')},
+  else if(wrap){
+    wrap.innerHTML='<canvas id="est-eq-'+tipo+'"></canvas>';
+    estCharts[tipo]=new Chart(document.getElementById('est-eq-'+tipo),{type:'line',
+      data:{labels:sorted.map((_,i)=>'Op '+(i+1)),datasets:[
+        {data:eqData,borderWidth:2,pointRadius:4,tension:.3,fill:true,borderColor:cor,backgroundColor:'rgba(255,255,255,.04)',pointBackgroundColor:eqData.map(v=>v>=0?'#3fb950':'#f85149')},
         {data:eqData.map(()=>0),borderColor:'rgba(255,255,255,.12)',borderDash:[5,5],borderWidth:1,pointRadius:0,fill:false}
       ]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
         scales:{x:{ticks:{color:'#8b949e',font:{size:10},maxTicksLimit:10},grid:{color:'rgba(255,255,255,.04)'}},
                 y:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.05)'}}}}});
   }
-  renderSetupRanking(t,'eo-setup-ranking',true);
-}
-function renderOpEstudo(){
-  renderOpEstudoCards();renderOpEstudoChart();
-  const tbody=document.getElementById('eo-body');
-  if(!tbody)return;
-  const ops=getOpsEstudoFiltradas().sort((a,b)=>b.data.localeCompare(a.data)||(b.hora||'').localeCompare(a.hora||''));
-  if(!ops.length){tbody.innerHTML=`<tr><td colspan="10" class="empty">Nenhuma operação neste mês</td></tr>`;return;}
-  tbody.innerHTML=ops.map((op,i)=>{
-    const ri=DB.opsEstudo.indexOf(op);
-    const cls=op.resultado>0?'vg':op.resultado<0?'vr':'';
-    return`<tr>
-      <td>${op.data}</td>
-      <td>${op.dataExec||op.data}</td>
-      <td>${op.hora||'—'}</td>
-      <td><span class="tag be-badge">${op.tipo==='SIMULADOR'?'Simulado':op.tipo==='REPLAY'?'Replay':op.tipo}</span></td>
-      <td><span class="trd-badge ${op.dir==='LONG'?'long':'short'}">${op.dir}</span></td>
-      <td>${op.setup}</td>
-      <td>${op.gatilho||'—'}</td>
-      <td class="${cls}">${op.resultado>=0?'+':''}${R(op.resultado)}</td>
-      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${op.obs||'—'}</td>
-      <td><button class="btn btn-r btn-sm btn-ico" onclick="deleteOpEstudo(${ri})">✕</button></td>
-    </tr>`;
-  }).join('');
+  renderSetupRanking(t,'est-rank-'+tipo,true);
+  const tbody=document.getElementById('est-body-'+tipo);
+  if(tbody){
+    const ops=[...t].sort((a,b)=>b.data.localeCompare(a.data)||(b.hora||'').localeCompare(a.hora||''));
+    if(!ops.length){tbody.innerHTML=`<tr><td colspan="8" class="empty">Nenhuma operação neste mês</td></tr>`;}
+    else tbody.innerHTML=ops.map(op=>{
+      const ri=DB.opsEstudo.indexOf(op);
+      const cls=op.resultado>0?'vg':op.resultado<0?'vr':'';
+      return`<tr>
+        <td>${(op.data||'').split('-').reverse().join('/')}</td>
+        <td>${op.hora||'—'}</td>
+        <td><span class="trd-badge ${op.dir==='LONG'?'long':'short'}">${op.dir}</span></td>
+        <td>${op.setup}</td>
+        <td>${op.gatilho||'—'}</td>
+        <td class="${cls}">${op.resultado>=0?'+':''}${R(op.resultado)} <span style="opacity:.6">(${(op.resultado/10).toFixed(1)}pts)</span></td>
+        <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${op.obs||'—'}</td>
+        <td><button class="btn btn-r btn-sm btn-ico" onclick="delEstOp(${ri},'${tipo}')">✕</button></td>
+      </tr>`;}).join('');
+  }
 }
 
 function addSessaoEstudo(){
