@@ -287,6 +287,7 @@ tr:hover td{background:var(--bg3)}
     <div class="ni" onclick="go('parc')"><span class="ico">💳</span>Parcelas</div>
     <div class="sb-sec">Trading</div>
     <div class="ni" onclick="go('trading')"><span class="ico">📈</span>Operações</div>
+    <div class="ni" onclick="go('trader')"><span class="ico">🧠</span>Agente Trader</div>
     <div class="sb-sec">Estudo</div>
     <div class="ni" onclick="go('estudo')"><span class="ico">📝</span>Replay e Simulado</div>
     <div class="ni" onclick="go('analise-estudo')"><span class="ico">🔬</span>Análise</div>
@@ -386,6 +387,34 @@ tr:hover td{background:var(--bg3)}
       <div id="insights"></div>
       <div class="sec-title">Recomendações</div>
       <div id="recomendacoes"></div>
+    </div>
+
+    <!-- AGENTE GESTOR DE TRADING -->
+    <div id="panel-trader" class="panel">
+      <div class="cards-grid">
+        <div class="card" style="grid-column:1/-1">
+          <div class="cl">Score de Disciplina — Trading</div>
+          <div style="display:flex;align-items:center;gap:16px;margin-top:6px">
+            <div id="tr-score-val" class="cv vg" style="font-size:2.5rem">—</div>
+            <div>
+              <div id="tr-score-label" style="font-size:.9rem;font-weight:600"></div>
+              <div class="health-bar" style="width:200px"><div class="health-ptr" id="tr-score-ptr" style="left:50%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="sec-title">Resumo do Período — Real · Replay · Simulador</div>
+      <div id="trader-resumo"></div>
+      <div class="chart-box">
+        <div class="chart-title">Resultado por mês no ano — Real · Replay · Simulador</div>
+        <div class="chart-wrap" id="c-tr-ano-wrap" style="height:220px"><canvas id="c-tr-ano"></canvas></div>
+      </div>
+      <div class="sec-title">✅ Onde melhorar / reforçar</div>
+      <div id="trader-melhorar"></div>
+      <div class="sec-title">⛔ O que evitar</div>
+      <div id="trader-evitar"></div>
+      <div class="sec-title">Recomendações</div>
+      <div id="trader-recs"></div>
     </div>
 
     <!-- NOVO LANÇAMENTO -->
@@ -611,8 +640,8 @@ tr:hover td{background:var(--bg3)}
         <div style="max-width:620px;margin-bottom:18px">
           <div class="sec-title">Registrar Replay</div>
           <div class="form-grid">
-            <div class="fg"><label class="fl">Data do gráfico</label><input type="date" class="fi" id="rep-data"></div>
-            <div class="fg"><label class="fl">Data do replay</label><input type="date" class="fi" id="rep-data-exec"></div>
+            <div class="fg"><label class="fl">Data do replay (base do mês)</label><input type="date" class="fi" id="rep-data"></div>
+            <div class="fg"><label class="fl">Data do gráfico</label><input type="date" class="fi" id="rep-data-exec"></div>
             <div class="fg"><label class="fl">Hora</label><input type="time" class="fi" id="rep-hora"></div>
             <div class="fg"><label class="fl">Direção</label>
               <select class="fs" id="rep-dir"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
@@ -636,7 +665,7 @@ tr:hover td{background:var(--bg3)}
         <div class="sec-title">Histórico — Replay (mês)</div>
         <div class="tbl-wrap">
           <table>
-            <thead><tr><th>Data gráfico</th><th>Feito em</th><th>Hora</th><th>Dir</th><th>Setup</th><th>Gatilho</th><th>Resultado</th><th>Obs</th><th></th></tr></thead>
+            <thead><tr><th>Data replay</th><th>Gráfico</th><th>Hora</th><th>Dir</th><th>Setup</th><th>Gatilho</th><th>Resultado</th><th>Obs</th><th></th></tr></thead>
             <tbody id="est-body-REPLAY"></tbody>
           </table>
         </div>
@@ -1022,7 +1051,7 @@ let delIdx=null,delTradeIdx=null,delCatIdx=null,editCatIdx=null,delParcIdx=null;
 let corSel=CORES[0];
 let cEquity=null,cEquityT=null,cSetup=null,cEmoc=null;
 let cDashAnual=null,cDashCat=null,cDashGanho=null,cSaldoLinha=null,cTradeLinha=null;
-let cAgCat=null,cAgTrade=null;
+let cAgCat=null,cAgTrade=null,cTrAno=null;
 let cExtCat=null,cExtGanho=null;
 let cMetasChart=null,cEmocT=null;
 let s12SemAtual=0;
@@ -1247,18 +1276,20 @@ function go(panel){
   const titles={dash:'Dashboard',agente:'Agente Gestor',lanc:'Novo Lançamento',
     extrato:'Extrato',metas:'Metas Mensais',parc:'Parcelas',
     trading:'Operações de Trading',
+    trader:'Agente Gestor de Trading',
     estudo:'Replay e Simulado',
     'analise-estudo':'Análise de Estudo',
     semanas12:'12 Semanas',
     cats:'Categorias',rel:'Exportar'};
   document.getElementById('topbar-title').textContent=titles[panel]||panel;
-  const idx={dash:0,agente:1,lanc:2,extrato:3,metas:4,parc:5,trading:6,estudo:7,'analise-estudo':8,semanas12:9,cats:10,rel:11};
+  const idx={dash:0,agente:1,lanc:2,extrato:3,metas:4,parc:5,trading:6,trader:7,estudo:8,'analise-estudo':9,semanas12:10,cats:11,rel:12};
   const nis=document.querySelectorAll('.ni');
   if(idx[panel]!==undefined)nis[idx[panel]].classList.add('active');
   if(panel==='dash')renderDash();
   if(panel==='agente')renderAgente();
   if(panel==='extrato')renderExtrato();
   if(panel==='trading'){renderTradeCards();renderTradeCharts();renderTrades();}
+  if(panel==='trader')renderTrader();
   if(panel==='metas')renderMetas();
   if(panel==='cats')renderCats();
   if(panel==='parc'){syncParcCats();renderParcCards();renderParcelas();}
@@ -1293,6 +1324,7 @@ function setMes(m){
   if(panel==='extrato')renderExtrato();
   if(panel==='metas')renderMetas();
   if(panel==='trading'){renderTradeCards();renderTradeCharts();renderTrades();}
+  if(panel==='trader')renderTrader();
   if(panel==='estudo')renderEstAll();
   if(panel==='analise-estudo')renderAnaliseEstudo();
 }
@@ -1613,6 +1645,102 @@ function renderAgente(){
   cAgTrade=mkBar('c-ag-trade','c-ag-trade-wrap',MESES.map(m=>m.slice(0,3)),[
     {label:'Trading',data:trMeses,backgroundColor:trMeses.map(v=>v>=0?'rgba(63,185,80,.75)':'rgba(248,81,73,.75)'),borderRadius:4,borderWidth:0}
   ],200);
+}
+
+// ════════════════════════════════
+//  AGENTE GESTOR DE TRADING
+// ════════════════════════════════
+function renderTrader(){
+  const anoN=new Date().getFullYear();
+  const ehAno=mesSel===13;
+  const inMes=(s)=>{ if(!s)return false; if(ehAno)return parseInt(s.split('-')[0])===anoN; return parseInt(s.split('-')[1])===mesSel; };
+  const real=DB.trades.filter(t=>inMes(t.data));
+  const ops=(DB.opsEstudo||[]);
+  const rep=ops.filter(o=>o.tipo==='REPLAY'&&inMes(o.data));
+  const sim=ops.filter(o=>o.tipo==='SIMULADOR'&&inMes(o.data));
+
+  const stat=(arr)=>{
+    const pnl=arr.reduce((a,x)=>a+(x.resultado||0),0);
+    const w=arr.filter(x=>x.resultado>0).length, l=arr.filter(x=>x.resultado<0).length;
+    const wr=arr.length?w/arr.length*100:0;
+    const aw=w?arr.filter(x=>x.resultado>0).reduce((a,x)=>a+x.resultado,0)/w:0;
+    const al=l?arr.filter(x=>x.resultado<0).reduce((a,x)=>a+x.resultado,0)/l:0;
+    return {n:arr.length,pnl,w,l,wr,aw,al,rr:al!==0?Math.abs(aw/al):0};
+  };
+  const sR=stat(real), sRe=stat(rep), sS=stat(sim);
+
+  const bloco=(nome,ico,s)=>`
+    <div style="flex:1;min-width:150px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:12px">
+      <div style="font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">${ico} ${nome}</div>
+      <div style="font-size:1.3rem;font-weight:800;color:${s.pnl>=0?'var(--green)':'var(--red)'}">${s.pnl>=0?'+':''}${R(s.pnl)}</div>
+      <div style="font-size:.72rem;color:var(--faint);margin-bottom:6px">${(s.pnl/10).toFixed(1)} pts · ${s.n} ops</div>
+      <div style="display:flex;justify-content:space-between;font-size:.75rem"><span style="color:var(--muted)">Win Rate</span><span style="font-weight:700">${s.n?s.wr.toFixed(0)+'%':'—'}</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:.75rem"><span style="color:var(--muted)">R:R</span><span style="font-weight:700">${s.rr?s.rr.toFixed(2):'—'}</span></div>
+    </div>`;
+  document.getElementById('trader-resumo').innerHTML=`<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">${bloco('Conta Real','💵',sR)}${bloco('Replay','📺',sRe)}${bloco('Simulador','🎮',sS)}</div>`;
+
+  // análise combinada operacional (real + simulador = decisões "ao vivo")
+  const vivo=[...real,...sim];
+  const byKey=(arr,key)=>{const m={};arr.forEach(x=>{const k=x[key]||'—';(m[k]=m[k]||{n:0,pnl:0}).n++;m[k].pnl+=x.resultado||0;});return m;};
+  const top=(m,dir)=>{const e=Object.entries(m);if(!e.length)return null;e.sort((a,b)=>dir*(b[1].pnl-a[1].pnl));return e[0];};
+  const setupM=byKey(vivo,'setup'), gatM=byKey(vivo,'gatilho');
+  const bestSetup=top(setupM,1), worstSetup=top(setupM,-1);
+  const bestGat=top(gatM,1), worstGat=top(gatM,-1);
+  const emoM=byKey(real,'emoc');
+  const emoCalmo=emoM['Calmo'];
+  const emoRuim=['Ansioso','Frustrado','Cansado'].reduce((a,k)=>{const x=emoM[k];return x?{n:a.n+x.n,pnl:a.pnl+x.pnl}:a;},{n:0,pnl:0});
+  const porDia={};real.forEach(t=>{porDia[t.data]=(porDia[t.data]||0)+1;});
+  const diasOver=Object.values(porDia).filter(c=>c>2).length;
+  const lotesGrandes=real.filter(t=>(t.lots||1)>1).length;
+
+  let score=100;
+  if(diasOver>0)score-=15;
+  if(lotesGrandes>0)score-=15;
+  if(sR.n>0&&sR.wr<45)score-=15;
+  if(emoRuim.n>0&&emoRuim.pnl<0)score-=10;
+  if(sR.n>0&&sR.pnl<0)score-=10;
+  if(sR.n===0&&sS.n===0&&sRe.n===0)score=0;
+  score=Math.max(0,Math.min(100,score));
+  const sc=document.getElementById('tr-score-val'), scCor=score>=70?'var(--green)':score>=40?'var(--yellow)':'var(--red)';
+  sc.textContent=score; sc.style.color=scCor;
+  document.getElementById('tr-score-label').textContent=score>=70?'Disciplina forte':score>=40?'Atenção na execução':'Execução crítica';
+  document.getElementById('tr-score-ptr').style.left=`calc(${score}% - 2px)`;
+
+  const mel=[];
+  if(bestSetup&&bestSetup[1].pnl>0)mel.push({ico:'🟢',t:`Reforce o setup "${bestSetup[0]}"`,b:`+${(bestSetup[1].pnl/10).toFixed(1)} pts em ${bestSetup[1].n} ops (real+simulador). É o que mais te paga — priorize.`});
+  if(bestGat&&bestGat[1].pnl>0)mel.push({ico:'🟢',t:`Gatilho que funciona: "${bestGat[0]}"`,b:`+${(bestGat[1].pnl/10).toFixed(1)} pts. Espere esse gatilho antes de entrar.`});
+  if(emoCalmo&&emoCalmo.pnl>0)mel.push({ico:'🟢',t:'Operar Calmo te dá resultado',b:`+${(emoCalmo.pnl/10).toFixed(1)} pts em ${emoCalmo.n} ops na conta real quando estava Calmo. Esse é o seu estado.`});
+  if(sR.n>0&&sR.wr>=55)mel.push({ico:'🟢',t:`Win rate real bom: ${sR.wr.toFixed(0)}%`,b:'Disciplina pagando. Mantenha o tamanho e o ritmo.'});
+  if(!mel.length)mel.push({ico:'🟡',t:'Ainda sem padrão positivo claro no período',b:'Registre mais operações pra o agente achar o que funciona pra você.'});
+  document.getElementById('trader-melhorar').innerHTML=mel.map(i=>`<div class="insight good"><span class="ins-ico">${i.ico}</span><div><div class="ins-t">${i.t}</div><div class="ins-b">${i.b}</div></div></div>`).join('');
+
+  const evi=[];
+  if(worstSetup&&worstSetup[1].pnl<0)evi.push({ico:'🔴',t:`Evite/refine o setup "${worstSetup[0]}"`,b:`${(worstSetup[1].pnl/10).toFixed(1)} pts em ${worstSetup[1].n} ops. Está drenando — corte ou só opere com confirmação extra.`});
+  if(worstGat&&worstGat[1].pnl<0)evi.push({ico:'🔴',t:`Gatilho que te prejudica: "${worstGat[0]}"`,b:`${(worstGat[1].pnl/10).toFixed(1)} pts. Evite entrar baseado nisso.`});
+  if(emoRuim.n>0&&emoRuim.pnl<0)evi.push({ico:'🔴',t:'Não opere Ansioso/Frustrado/Cansado',b:`${(emoRuim.pnl/10).toFixed(1)} pts em ${emoRuim.n} ops nesses estados. Fora do Calmo, fica de fora.`});
+  if(diasOver>0)evi.push({ico:'🟡',t:`Overtrading: ${diasOver} dia(s) com +2 ops`,b:'Sua regra é máx 2 ops/dia. Passou disso, fecha a plataforma.'});
+  if(lotesGrandes>0)evi.push({ico:'🟡',t:`Aumento de lote: ${lotesGrandes} op(s) com +1 contrato`,b:'Regra é 1 contrato. Aumentar a mão fora do plano é o gatilho clássico de prejuízo.'});
+  if(!evi.length)evi.push({ico:'🟢',t:'Nada gritante pra evitar no período',b:'Execução limpa até aqui. Segue assim.'});
+  document.getElementById('trader-evitar').innerHTML=evi.map(i=>`<div class="insight ${i.ico==='🔴'?'danger':'warn'}"><span class="ins-ico">${i.ico}</span><div><div class="ins-t">${i.t}</div><div class="ins-b">${i.b}</div></div></div>`).join('');
+
+  const recs=[];
+  if(bestSetup&&bestSetup[1].pnl>0)recs.push({cor:'#3fb950',t:`Faça mais "${bestSetup[0]}", menos o resto`,d:'Concentre as entradas no setup que rende. Qualidade acima de quantidade.'});
+  if(diasOver>0||lotesGrandes>0)recs.push({cor:'#f85149',t:'Trave a execução: 1 contrato, 2 ops/dia',d:'Bateu o teto, parou. Isso protege o resultado mais do que qualquer setup.'});
+  if(sR.n>0&&sS.n>0){const gap=sS.wr-sR.wr;if(Math.abs(gap)>=10)recs.push({cor:'#58a6ff',t:gap>0?'Você acerta mais no simulador que no real':'Você acerta mais no real que no simulador',d:`Win rate Real ${sR.wr.toFixed(0)}% × Simulador ${sS.wr.toFixed(0)}%. ${gap>0?'A diferença é emocional/execução no real — replique no real o que faz no sim.':'No real você está mais seletivo. Use isso a favor.'}`});}
+  if(sRe.n>0)recs.push({cor:'#bc8cff',t:'Use o Replay pra treinar o pior setup',d:'Pegue o setup que mais perde e refaça no replay até o padrão melhorar antes de levar pro real.'});
+  if(!recs.length)recs.push({cor:'#8b949e',t:'Continue registrando',d:'Quanto mais operações, mais preciso fica o diagnóstico mês a mês.'});
+  document.getElementById('trader-recs').innerHTML=recs.map((r,i)=>`<div class="rec-card"><div class="rec-head"><div class="rec-num" style="background:rgba(${hexToRgb(r.cor)},.2);color:${r.cor}">${i+1}</div><div style="font-size:.85rem;font-weight:700">${r.t}</div></div><div style="font-size:.78rem;color:var(--muted);line-height:1.6;padding-left:38px">${r.d}</div></div>`).join('');
+
+  const sumMes=(arr,m)=>arr.filter(x=>x.data&&parseInt(x.data.split('-')[0])===anoN&&parseInt(x.data.split('-')[1])===m).reduce((a,x)=>a+(x.resultado||0),0);
+  const realMes=MESES.map((_,i)=>sumMes(DB.trades,i+1));
+  const repMes=MESES.map((_,i)=>sumMes(ops.filter(o=>o.tipo==='REPLAY'),i+1));
+  const simMes=MESES.map((_,i)=>sumMes(ops.filter(o=>o.tipo==='SIMULADOR'),i+1));
+  if(cTrAno)cTrAno.destroy();
+  cTrAno=mkBar('c-tr-ano','c-tr-ano-wrap',MESES.map(m=>m.slice(0,3)),[
+    {label:'Real',data:realMes,backgroundColor:'rgba(63,185,80,.8)',borderRadius:3,borderWidth:0},
+    {label:'Replay',data:repMes,backgroundColor:'rgba(188,140,255,.8)',borderRadius:3,borderWidth:0},
+    {label:'Simulador',data:simMes,backgroundColor:'rgba(57,197,207,.8)',borderRadius:3,borderWidth:0}
+  ],220);
 }
 
 // ════════════════════════════════
