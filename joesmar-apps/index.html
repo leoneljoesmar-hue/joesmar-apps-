@@ -611,7 +611,8 @@ tr:hover td{background:var(--bg3)}
         <div style="max-width:620px;margin-bottom:18px">
           <div class="sec-title">Registrar Replay</div>
           <div class="form-grid">
-            <div class="fg"><label class="fl">Data</label><input type="date" class="fi" id="rep-data"></div>
+            <div class="fg"><label class="fl">Data do gráfico</label><input type="date" class="fi" id="rep-data"></div>
+            <div class="fg"><label class="fl">Data do replay</label><input type="date" class="fi" id="rep-data-exec"></div>
             <div class="fg"><label class="fl">Hora</label><input type="time" class="fi" id="rep-hora"></div>
             <div class="fg"><label class="fl">Direção</label>
               <select class="fs" id="rep-dir"><option value="LONG">LONG</option><option value="SHORT">SHORT</option></select>
@@ -635,7 +636,7 @@ tr:hover td{background:var(--bg3)}
         <div class="sec-title">Histórico — Replay (mês)</div>
         <div class="tbl-wrap">
           <table>
-            <thead><tr><th>Data</th><th>Hora</th><th>Dir</th><th>Setup</th><th>Gatilho</th><th>Resultado</th><th>Obs</th><th></th></tr></thead>
+            <thead><tr><th>Data gráfico</th><th>Feito em</th><th>Hora</th><th>Dir</th><th>Setup</th><th>Gatilho</th><th>Resultado</th><th>Obs</th><th></th></tr></thead>
             <tbody id="est-body-REPLAY"></tbody>
           </table>
         </div>
@@ -2186,7 +2187,7 @@ function garantirCamposDB(){
 function initApp(){
   garantirCamposDB();
   setHoje('f-data');setHoje('t-data');setHoje('p-data');
-  setHoje('rep-data');setHoje('sim-data');
+  setHoje('rep-data');setHoje('rep-data-exec');setHoje('sim-data');
   const mesAtual=new Date().toISOString().slice(0,7);
   const trData=document.getElementById('tr-data');
   if(trData)trData.value=mesAtual;
@@ -2242,6 +2243,7 @@ function addEstOp(tipo){
     op.horaSaida=document.getElementById('sim-hora-out').value;
   } else {
     op.hora=document.getElementById('rep-hora').value;
+    op.dataExec=document.getElementById('rep-data-exec').value||data;
   }
   DB.opsEstudo.push(op);
   save();
@@ -2294,13 +2296,17 @@ function renderEstBox(tipo){
   const tbody=document.getElementById('est-body-'+tipo);
   if(tbody){
     const ops=[...t].sort((a,b)=>b.data.localeCompare(a.data)||(b.hora||'').localeCompare(a.hora||''));
-    if(!ops.length){tbody.innerHTML=`<tr><td colspan="8" class="empty">Nenhuma operação neste mês</td></tr>`;}
+    const colsEmpty=tipo==='REPLAY'?9:8;
+    if(!ops.length){tbody.innerHTML=`<tr><td colspan="${colsEmpty}" class="empty">Nenhuma operação neste mês</td></tr>`;}
     else tbody.innerHTML=ops.map(op=>{
       const ri=DB.opsEstudo.indexOf(op);
       const cls=op.resultado>0?'vg':op.resultado<0?'vr':'';
+      const fmt=d=>(d||'').split('-').reverse().join('/');
+      const lead = tipo==='REPLAY'
+        ? `<td>${fmt(op.data)}</td><td>${fmt(op.dataExec||op.data)}</td><td>${op.hora||'—'}</td>`
+        : `<td>${fmt(op.data)}</td><td>${op.hora||'—'}${op.horaSaida?' → '+op.horaSaida:''}</td>`;
       return`<tr>
-        <td>${(op.data||'').split('-').reverse().join('/')}</td>
-        <td>${op.hora||'—'}${op.horaSaida?' → '+op.horaSaida:''}</td>
+        ${lead}
         <td><span class="trd-badge ${op.dir==='LONG'?'long':'short'}">${op.dir}</span></td>
         <td>${op.setup}</td>
         <td>${op.gatilho||'—'}</td>
