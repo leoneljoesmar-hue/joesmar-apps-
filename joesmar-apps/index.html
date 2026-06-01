@@ -288,7 +288,7 @@ tr:hover td{background:var(--bg3)}
     <div class="sb-sec">Trading</div>
     <div class="ni" onclick="go('trading')"><span class="ico">📈</span>Operações</div>
     <div class="sb-sec">Estudo</div>
-    <div class="ni" onclick="go('estudo')"><span class="ico">📝</span>Estudo & Replay</div>
+    <div class="ni" onclick="go('estudo')"><span class="ico">📝</span>Replay e Simulado</div>
     <div class="ni" onclick="go('analise-estudo')"><span class="ico">🔬</span>Análise</div>
     <div class="sb-sec">12 Semanas</div>
     <div class="ni" onclick="go('semanas12')"><span class="ico">🗓️</span>12 Semanas</div>
@@ -616,8 +616,7 @@ tr:hover td{background:var(--bg3)}
             <div class="fg"><label class="fl">Tipo</label>
               <select class="fs" id="eo-tipo">
                 <option value="REPLAY">Replay</option>
-                <option value="SIMULADOR">Simulador</option>
-                <option value="REAL">Real (anotação)</option>
+                <option value="SIMULADOR">Simulado</option>
               </select>
             </div>
             <div class="fg"><label class="fl">Direção</label>
@@ -640,6 +639,15 @@ tr:hover td{background:var(--bg3)}
             </div>
           </div>
           <button class="btn btn-p" onclick="addOpEstudo()">💾 Registrar Operação</button>
+        </div>
+        <div class="cards-grid" id="est-ops-cards"></div>
+        <div class="chart-box">
+          <div class="chart-title">Equity Curve — Replay e Simulado (mês)</div>
+          <div class="chart-wrap" id="c-eo-equity-wrap" style="height:200px"><canvas id="c-eo-equity"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">Ranking por Setup (mês)</div>
+          <div id="eo-setup-ranking" style="overflow-x:auto"></div>
         </div>
         <div class="sec-title">Histórico de Operações</div>
         <div class="tbl-wrap">
@@ -1259,7 +1267,7 @@ function go(panel){
   const titles={dash:'Dashboard',agente:'Agente Gestor',lanc:'Novo Lançamento',
     extrato:'Extrato',metas:'Metas Mensais',parc:'Parcelas',
     trading:'Operações de Trading',
-    estudo:'Estudo & Replay',
+    estudo:'Replay e Simulado',
     'analise-estudo':'Análise de Estudo',
     semanas12:'12 Semanas',
     cats:'Categorias',rel:'Exportar'};
@@ -1305,6 +1313,8 @@ function setMes(m){
   if(panel==='extrato')renderExtrato();
   if(panel==='metas')renderMetas();
   if(panel==='trading'){renderTradeCards();renderTradeCharts();renderTrades();}
+  if(panel==='estudo')renderOpEstudo();
+  if(panel==='analise-estudo')renderAnaliseEstudo();
 }
 
 // ════════════════════════════════
@@ -2214,7 +2224,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 // ════════════════════════════════
 //  ESTUDO & REPLAY
 // ════════════════════════════════
-let cEstSetup=null,cEstGatilho=null,cEstEquity=null;
+let cEstSetup=null,cEstGatilho=null,cEstEquity=null,cEoEquity=null;
 
 function syncEstudoSelects(){
   const setup=document.getElementById('eo-setup');
@@ -2254,11 +2264,53 @@ function deleteOpEstudo(idx){
   save();renderOpEstudo();
 }
 
+function getOpsEstudoFiltradas(){
+  return (DB.opsEstudo||[]).filter(o=>{
+    if(!o.data)return false;
+    if(mesSel===13){return parseInt(o.data.split('-')[0])===new Date().getFullYear();}
+    return parseInt(o.data.split('-')[1])===mesSel;
+  });
+}
+function renderOpEstudoCards(){
+  const el=document.getElementById('est-ops-cards');if(!el)return;
+  const t=getOpsEstudoFiltradas();
+  const pnl=t.reduce((a,x)=>a+x.resultado,0);
+  const wins=t.filter(x=>x.resultado>0).length;
+  const losses=t.filter(x=>x.resultado<0).length;
+  const be=t.filter(x=>x.resultado===0).length;
+  const wr=t.length>0?(wins/t.length*100).toFixed(1):0;
+  const rep=t.filter(x=>x.tipo==='REPLAY').length;
+  const sim=t.filter(x=>x.tipo==='SIMULADOR').length;
+  el.innerHTML=`
+    <div class="card ${pnl>=0?'cg':'cr2'}"><div class="cl">Resultado do Mês</div><div class="cv ${pnl>=0?'vg':'vr'}">${pnl>=0?'+':''}${R(pnl)}</div><div class="cs">${(pnl/10).toFixed(1)} pts · ${t.length} ops</div></div>
+    <div class="card cb"><div class="cl">Win Rate</div><div class="cv vb">${wr}%</div><div class="cs">${wins}W / ${losses}L${be>0?' / '+be+'BE':''}</div></div>
+    <div class="card cp"><div class="cl">Replay × Simulado</div><div class="cv vp">${rep} / ${sim}</div><div class="cs">replay / simulado</div></div>`;
+}
+function renderOpEstudoChart(){
+  const t=getOpsEstudoFiltradas().sort((a,b)=>a.data.localeCompare(b.data)||(a.hora||'').localeCompare(b.hora||''));
+  let acum=0;const eqData=t.map(x=>{acum+=x.resultado;return acum;});
+  if(cEoEquity)cEoEquity.destroy();
+  const wrap=document.getElementById('c-eo-equity-wrap');
+  if(!eqData.length){if(wrap)wrap.innerHTML='<div style="height:200px;display:flex;align-items:center;justify-content:center;color:#8b949e;font-size:.85rem">Nenhuma operação neste mês</div>';}
+  else{
+    if(wrap)wrap.innerHTML='<canvas id="c-eo-equity"></canvas>';
+    cEoEquity=new Chart(document.getElementById('c-eo-equity'),{type:'line',
+      data:{labels:t.map((_,i)=>'Op '+(i+1)),datasets:[
+        {data:eqData,borderWidth:2,pointRadius:4,tension:.3,fill:true,borderColor:'#bc8cff',backgroundColor:'rgba(188,140,255,.07)',pointBackgroundColor:eqData.map(v=>v>=0?'#3fb950':'#f85149')},
+        {data:eqData.map(()=>0),borderColor:'rgba(255,255,255,.12)',borderDash:[5,5],borderWidth:1,pointRadius:0,fill:false}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{ticks:{color:'#8b949e',font:{size:10},maxTicksLimit:10},grid:{color:'rgba(255,255,255,.04)'}},
+                y:{ticks:{color:'#8b949e',font:{size:10},callback:v=>'R$'+v.toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.05)'}}}}});
+  }
+  renderSetupRanking(t,'eo-setup-ranking',true);
+}
 function renderOpEstudo(){
+  renderOpEstudoCards();renderOpEstudoChart();
   const tbody=document.getElementById('eo-body');
   if(!tbody)return;
-  const ops=[...DB.opsEstudo].sort((a,b)=>b.data.localeCompare(a.data)||(b.hora||'').localeCompare(a.hora||''));
-  if(!ops.length){tbody.innerHTML=`<tr><td colspan="10" class="empty">Nenhuma operação registrada</td></tr>`;return;}
+  const ops=getOpsEstudoFiltradas().sort((a,b)=>b.data.localeCompare(a.data)||(b.hora||'').localeCompare(a.hora||''));
+  if(!ops.length){tbody.innerHTML=`<tr><td colspan="10" class="empty">Nenhuma operação neste mês</td></tr>`;return;}
   tbody.innerHTML=ops.map((op,i)=>{
     const ri=DB.opsEstudo.indexOf(op);
     const cls=op.resultado>0?'vg':op.resultado<0?'vr':'';
@@ -2266,7 +2318,7 @@ function renderOpEstudo(){
       <td>${op.data}</td>
       <td>${op.dataExec||op.data}</td>
       <td>${op.hora||'—'}</td>
-      <td><span class="tag be-badge">${op.tipo}</span></td>
+      <td><span class="tag be-badge">${op.tipo==='SIMULADOR'?'Simulado':op.tipo==='REPLAY'?'Replay':op.tipo}</span></td>
       <td><span class="trd-badge ${op.dir==='LONG'?'long':'short'}">${op.dir}</span></td>
       <td>${op.setup}</td>
       <td>${op.gatilho||'—'}</td>
