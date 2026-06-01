@@ -602,8 +602,9 @@ tr:hover td{background:var(--bg3)}
     <!-- ESTUDO & REPLAY -->
     <div id="panel-estudo" class="panel">
       <div class="tabs">
-        <div class="tab on" onclick="showEstTab('ops')">Operações</div>
-        <div class="tab" onclick="showEstTab('sess')">Sessões de Estudo</div>
+        <div class="tab on" onclick="setEstFiltro('TODOS',this)">Todos</div>
+        <div class="tab" onclick="setEstFiltro('REPLAY',this)">Replay</div>
+        <div class="tab" onclick="setEstFiltro('SIMULADOR',this)">Simulado</div>
       </div>
 
       <!-- ABA: OPERAÇÕES DE ESTUDO -->
@@ -2264,11 +2265,21 @@ function deleteOpEstudo(idx){
   save();renderOpEstudo();
 }
 
+let estFiltro='TODOS';
+function setEstFiltro(f,el){
+  estFiltro=f;
+  document.querySelectorAll('#panel-estudo .tabs .tab').forEach(t=>t.classList.remove('on'));
+  if(el)el.classList.add('on');
+  const tp=document.getElementById('eo-tipo');
+  if(tp&&(f==='REPLAY'||f==='SIMULADOR'))tp.value=f;
+  renderOpEstudo();
+}
 function getOpsEstudoFiltradas(){
   return (DB.opsEstudo||[]).filter(o=>{
     if(!o.data)return false;
-    if(mesSel===13){return parseInt(o.data.split('-')[0])===new Date().getFullYear();}
-    return parseInt(o.data.split('-')[1])===mesSel;
+    const mesOk = mesSel===13 ? parseInt(o.data.split('-')[0])===new Date().getFullYear() : parseInt(o.data.split('-')[1])===mesSel;
+    const tipoOk = estFiltro==='TODOS' || o.tipo===estFiltro;
+    return mesOk && tipoOk;
   });
 }
 function renderOpEstudoCards(){
